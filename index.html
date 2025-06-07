@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,12 +34,9 @@
     
     <!-- header -->
     <header class="header" data-header>
-        <href="./" class="logo">
-            <img src="./assets/images/logo-light.svg" width="156" height="32" 
-            alt="Cook.io" class="Logo-Light">
-            <a href="./" class="logo">
-            <img src="./assets/images/logo-dark.svg" width="156" height="32" 
-            alt="Cook.io" class="Logo-dark">
+        <a href="./" class="logo">
+          <img src="./assets/images/logo-light.svg" width="156" height="32" alt="Cook.io" class="logo-light">
+          <img src="./assets/images/logo-dark.svg" width="156" height="32" alt="Cook.io" class="logo-dark">
         </a>
         <nav class="navbar">
             <ul class="navbar-list">
@@ -61,6 +59,77 @@
         </a>
     </header>
 
+    <!-- mobile nav -->
+
+    <nav class="mobile-nav" aria-label="primary">
+        <ul class="nav-list">
+
+            <li class="nav-item">
+                <a href="./recipes.html" class="nav-link">
+                    <span class="item-icon">
+                        <span class="material-symbols-outlined" aria-hidden="true">lunch_dining</span>
+                    </span>
+
+                    <span class="label-medium">Recipes</span>
+                </a>
+            </li>
+
+             <li class="nav-item">
+                <a href="#" class="nav-link" aria-current="true">
+                    <span class="item-icon">
+                        <span class="material-symbols-outlined" aria-hidden="true">home</span>
+                    </span>
+
+                    <span class="label-medium">Home</span>
+                </a>
+            </li>
+
+             <li class="nav-item">
+                <a href="./saved-recipes.html" class="nav-link">
+                    <span class="item-icon">
+                        <span class="material-symbols-outlined" aria-hidden="true">book</span>
+                    </span>
+
+                    <span class="label-medium">Saved</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+
+    <main>
+        <article>
+            
+             <!-- HERO -->
+            <section class="hero" aria-label="banner">
+                <div class="banner-card">
+                    <h1 class="display-large">Hidangan apa yang Anda inginkan?</h1>
+
+                    <div class="search-wrapper" data-search-form>
+                
+                        <span class="material-symbols-outlined leading-icon" 
+                        aria-hidden="true">local_dining</span>
+
+
+                        <input type="search" name="search" aria-label="Search recipes" 
+                        placeholder="Search recipes..." class="search-field body-medium" data-search-field>
+
+                        <button class="search-sumbit" aria-label="Sumbit"
+                        data-search-btn>
+                            <span class="material-symbols-outlined" 
+                            aria-hidden="true">search</span>
+
+                        </button>
+                    </div>
+
+                    <p class="label-medium">
+                        Search any recipe e.g: burger, pizza, sandwich, toast.
+                    </p>
+
+                </div>
+            </section>
+        </article>
+    </main>
 
 </body>
 </html>

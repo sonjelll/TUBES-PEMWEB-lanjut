@@ -422,6 +422,9 @@ main {flex-grow: 1;}
   gap: 8px;
   border-radius: var(--radius-4);
   transition: var(--transition-short);
+  width: max-content;        
+  min-width: 0;              
+  box-sizing: border-box;     
 }
 
 .btn .material-symbols-outlined { font-size: 1.8rem; }
@@ -432,7 +435,7 @@ main {flex-grow: 1;}
 
 .btn-primary {
   background-color: var(--primary, #ff5722); /* fallback ke oranye */
-  color: var(--white, #fff);
+  color: var(--primary);
 }
 
 .btn-primary:where(:hover, :focus-visible):not(:active) {
@@ -440,6 +443,11 @@ background-color: var(--primary-hover);
 }
 
 /* secondary button */
+
+.btn-secondary {
+  background-color: var(--primary-container);
+  color: var(--on-background);
+}
 
 /* badge button */
 
@@ -479,7 +487,81 @@ background-color: var(--primary-hover);
 \*-----------------------------------*/
 
 
+.navbar,
+.header .btn-primary { display: none; }
 
+.header {
+  background-color: var(--background);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-inline: 16px;
+  border-block-end: 1px solid var(--outline);
+  z-index: 4;
+}
+.theme-switch { margin-inline-start: auto; }
+
+[data-theme='light'] :where(.logo-dark, .theme-switch .light-icon), 
+[data-theme='dark'] :where(.logo-light, .theme-switch .dark-icon) {
+  display: none;
+}
+  
+
+
+/*-----------------------------------*\
+  #MOBILE NAV
+\*-----------------------------------*/
+
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: var(--mobile-nav-height);
+  background-color: var(--primary-container);
+  color: var(--on-background-variant);
+  padding-block: 12px 16px;
+  z-index: 4;
+  box-shadow: var(--shadow-1);
+}
+
+.mobile-nav .nav-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
+}
+
+
+
+.mobile-nav .item-icon {
+  width: 64px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: var(--radius-pill);
+  margin-inline: auto;
+  margin-block-end: 4px;
+  transition: var(--transition-short);
+}
+
+.m0bile-nav .nav-link:where(:hover, :focus-visible) .item-icon {
+  background-color: var(--alpha-10);
+}
+
+.mobile-nav .nav-link[aria-current="true"] { color: var(--on-background); }
+
+.mobile-nav .nav-link[aria-current="true"] .item-icon {
+  background-color: var(--active-indicator);
+}
+
+.mobile-nav .nav-link[aria-current="true"] .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1; 
+}
 
 
 /*-----------------------------------*\
