@@ -13,31 +13,53 @@ export default function RecipeForm({ onAdd }) {
       body: JSON.stringify({ title, description, image_url }),
     });
     const data = await res.json();
-    onAdd(data);
+    if (onAdd) onAdd(data);
     setTitle("");
     setDescription("");
     setImageUrl("");
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        placeholder="Judul Resep"
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-        required
-      />
-      <input
-        placeholder="URL Gambar"
-        value={image_url}
-        onChange={e => setImageUrl(e.target.value)}
-      />
-      <textarea
-        placeholder="Deskripsi"
-        value={description}
-        onChange={e => setDescription(e.target.value)}
-      />
-      <button type="submit">Tambah Resep</button>
+    <form onSubmit={handleSubmit} className="box" style={{ maxWidth: 500, margin: "32px auto" }}>
+      <div className="field">
+        <label className="label">Judul Resep</label>
+        <div className="control">
+          <input
+            className="input"
+            placeholder="Judul Resep"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            required
+          />
+        </div>
+      </div>
+      <div className="field">
+        <label className="label">URL Gambar</label>
+        <div className="control">
+          <input
+            className="input"
+            placeholder="URL Gambar"
+            value={image_url}
+            onChange={e => setImageUrl(e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="field">
+        <label className="label">Deskripsi</label>
+        <div className="control">
+          <textarea
+            className="textarea"
+            placeholder="Deskripsi"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="field is-grouped is-grouped-right">
+        <div className="control">
+          <button type="submit" className="button is-primary">Tambah Resep</button>
+        </div>
+      </div>
     </form>
   );
 }
