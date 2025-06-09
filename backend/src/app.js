@@ -1,6 +1,6 @@
-import express from 'express';
-import cors from 'cors';
-import recipeRoutes from './routes/recipeRoutes.js';
+const express = require('express');
+const cors = require('cors');
+const recipeRoutes = require('./routes/recipeRoutes');
 
 const app = express();
 app.use(cors());
