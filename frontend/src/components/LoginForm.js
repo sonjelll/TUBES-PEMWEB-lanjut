@@ -2,6 +2,7 @@ import { useState } from "react";
 
 export default function LoginForm({ isRegister, onSuccess, onSwitch }) {
   const [error, setError] = useState("");
+
   return (
     <form
       onSubmit={async (e) => {
@@ -14,27 +15,8 @@ export default function LoginForm({ isRegister, onSuccess, onSwitch }) {
           nama = e.target.nama.value;
           email = e.target.email.value;
         }
-        const url = process.env.REACT_APP_API_URL + (isRegister ? "/auth/register" : "/auth/login");
-        const body = isRegister
-          ? { username, password, nama, email }
-          : { username, password };
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          if (isRegister) {
-            alert("Registrasi berhasil! Silakan login.");
-            onSwitch(false);
-          } else {
-            localStorage.setItem("token", data.token);
-            onSuccess && onSuccess(data.user);
-          }
-        } else {
-          setError(data.error || (isRegister ? "Registrasi gagal" : "Login gagal"));
-        }
+        // Simulasi login/register sukses
+        onSuccess({ username, password, nama, email });
       }}
     >
       {isRegister && (

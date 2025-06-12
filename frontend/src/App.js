@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import "bulma/css/bulma.min.css";
-import LoginForm from "./components/LoginForm";
 import Navbar from "./components/Navbar";
-import { Routes, Route } from "react-router-dom";
+import { useNavigate, Routes, Route } from "react-router-dom";
+import Register from "./pages/Register";
 import Login from "./pages/Login";
+import DashboardUser from "./pages/DashboardUser";
 
 function App() {
   const [recipes, setRecipes] = useState([]);
   const [search, setSearch] = useState("");
-  const [showLogin, setShowLogin] = useState(false);
-  const [isRegister, setIsRegister] = useState(false);
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   // Array dummy untuk placeholder resep populer
   const dummyPopular = [
@@ -78,229 +78,209 @@ function App() {
       </ul>
       <div style={{ marginTop: 32, fontSize: 14, color: "#444" }}>
         Untuk mulai membuat koleksi resep, silakan
-        <button type="button" className="link-button" onClick={() => {
-          setIsRegister(true);
-          setShowLogin(true);
-        }}>
-          daftar
-        </button>
+        <button type="button" className="link-button" onClick={() => navigate("/login")}>masuk</button>
         atau 
-        <button type="button" className="link-button" onClick={() => setShowLogin(true)}>masuk</button>
+        <button type="button" className="link-button" onClick={() => navigate("/register")}>daftar</button>
       </div>
     </aside>
   );
 
-  
-
+  // --- PENTING: Routing di level root ---
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      <Sidebar />
-      <div style={{ marginLeft: 220, flex: 1 }}>
-        <Navbar
-          onLoginClick={() => setShowLogin(true)}
-          user={user}
-          onLogout={() => {
-            setUser(null);
-            localStorage.removeItem("token");
-          }}
-        />
-        {/* Hero Section ala Cookpad */}
-        <section
-          className="hero is-medium"
-          style={{
-            background: "linear-gradient(120deg, #fffbe6 0%, #fff 100%)",
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1500&q=80')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            position: "relative",
-            minHeight: "60vh",
-          }}
-        >
-          <div
-            className="hero-body"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(255,255,255,0.85)",
-              borderRadius: "16px",
-              margin: "32px",
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          <Login
+            onSuccess={user => {
+              setUser(user);
+              navigate("/");
             }}
-          >
-            <h1
-              className="title is-1"
-              style={{
-                color: "#ff914d",
-                fontFamily: "'DM Serif Display', serif",
-                fontWeight: 700,
-                letterSpacing: 1,
-              }}
-            >
-              Cook.io
-            </h1>
-            <h2
-              className="subtitle is-3"
-              style={{
-                color: "#222",
-                fontWeight: 400,
-                marginBottom: 24,
-              }}
-            >
-              Temukan & Bagikan Resep Masakan Rumahan Favoritmu!
-            </h2>
-            <form
-              className="field has-addons"
-              style={{ maxWidth: 500, width: "100%", margin: "0 auto" }}
-              onSubmit={e => e.preventDefault()}
-            >
-              <div className="control is-expanded">
-                <input
-                  className="input is-large"
-                  type="text"
-                  placeholder="Cari resep (misal: ayam, mie, dessert...)"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  style={{ borderRadius: "24px 0 0 24px" }}
-                />
-              </div>
-              <div className="control">
-                <button className="button is-warning is-large" style={{ borderRadius: "0 24px 24px 0" }}>
-                  🔍
-                </button>
-              </div>
-            </form>
-            <p className="mt-5" style={{ color: "#444", fontSize: 18 }}>
-              Jelajahi ribuan resep rumahan, simpan favoritmu, dan bagikan kreasi masakanmu bersama komunitas.
-            </p>
-          </div>
-        </section>
+          />
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <Register
+            onSuccess={user => {
+              setUser(user);
+              navigate("/dashboard");
+            }}
+          />
+        }
+      />
+      {user && (
+        <Route path="/dashboard" element={<DashboardUser user={user} />} />
+      )}
+      {/* Route utama (landing/dashboard) */}
+      <Route
+        path="*"
+        element={
+          <div style={{ display: "flex", minHeight: "100vh" }}>
+            <Sidebar />
+            <div style={{ marginLeft: 220, flex: 1 }}>
+              <Navbar
+                onLoginClick={() => navigate("/login")}
+                user={user}
+                onLogout={() => {
+                  setUser(null);
+                  localStorage.removeItem("token");
+                }}
+              />
 
-        {/* Grid Resep Populer */}
-        <section className="section">
-          <div className="container">
-            <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-              Pencarian populer
-            </h2>
-            <div className="columns is-multiline">
-              {(filteredRecipes.length === 0 ? dummyPopular : filteredRecipes.slice(0, 8)).map((item, i) => (
-                <div className="column is-3" key={item.id || i}>
-                  <div className="populer-card">
-                    <img
-                      src={item.image_url || item.img}
-                      alt={item.title}
-                      className="populer-img"
-                    />
-                    <div className="populer-title">
-                      {item.title}
+              {/* Hero Section ala Cookpad */}
+              <section
+                className="hero is-medium"
+                style={{
+                  background: "linear-gradient(120deg, #fffbe6 0%, #fff 100%)",
+                  backgroundImage:
+                    "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1500&q=80')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  position: "relative",
+                  minHeight: "60vh",
+                }}
+              >
+                <div
+                  className="hero-body"
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "rgba(255,255,255,0.85)",
+                    borderRadius: "16px",
+                    margin: "32px",
+                  }}
+                >
+                  <h1
+                    className="title is-1"
+                    style={{
+                      color: "#ff914d",
+                      fontFamily: "'DM Serif Display', serif",
+                      fontWeight: 700,
+                      letterSpacing: 1,
+                    }}
+                  >
+                    Cook.io
+                  </h1>
+                  <h2
+                    className="subtitle is-3"
+                    style={{
+                      color: "#222",
+                      fontWeight: 400,
+                      marginBottom: 24,
+                    }}
+                  >
+                    Temukan & Bagikan Resep Masakan Rumahan Favoritmu!
+                  </h2>
+                  <form
+                    className="field has-addons"
+                    style={{ maxWidth: 500, width: "100%", margin: "0 auto" }}
+                    onSubmit={e => e.preventDefault()}
+                  >
+                    <div className="control is-expanded">
+                      <input
+                        className="input is-large"
+                        type="text"
+                        placeholder="Cari resep (misal: ayam, mie, dessert...)"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        style={{ borderRadius: "24px 0 0 24px" }}
+                      />
                     </div>
+                    <div className="control">
+                      <button className="button is-warning is-large" style={{ borderRadius: "0 24px 24px 0" }}>
+                        🔍
+                      </button>
+                    </div>
+                  </form>
+                  <p className="mt-5" style={{ color: "#444", fontSize: 18 }}>
+                    Jelajahi ribuan resep rumahan, simpan favoritmu, dan bagikan kreasi masakanmu bersama komunitas.
+                  </p>
+                </div>
+              </section>
+
+              {/* Grid Resep Populer */}
+              <section className="section">
+                <div className="container">
+                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                    Pencarian populer
+                  </h2>
+                  <div className="columns is-multiline">
+                    {(filteredRecipes.length === 0 ? dummyPopular : filteredRecipes.slice(0, 8)).map((item, i) => (
+                      <div className="column is-3" key={item.id || i}>
+                        <div className="populer-card">
+                          <img
+                            src={item.image_url || item.img}
+                            alt={item.title}
+                            className="populer-img"
+                          />
+                          <div className="populer-title">
+                            {item.title}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
+              </section>
 
-        {/* Grid Minuman Minuman */}
-        <section className="section">
-          <div className="container">
-            <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-              Minuman 
-            </h2>
-            <div className="columns is-multiline">
-              {dummyMinuman.map((item, i) => (
-                <div className="column is-3" key={i}>
-                  <div className="populer-card">
-                    <img
-                      src={item.img}
-                      alt={item.title}
-                      className="populer-img"
-                    />
-                    <div className="populer-title">
-                      {item.title}
-                    </div>
+              {/* Grid Minuman Minuman */}
+              <section className="section">
+                <div className="container">
+                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                    Minuman 
+                  </h2>
+                  <div className="columns is-multiline">
+                    {dummyMinuman.map((item, i) => (
+                      <div className="column is-3" key={i}>
+                        <div className="populer-card">
+                          <img
+                            src={item.img}
+                            alt={item.title}
+                            className="populer-img"
+                          />
+                          <div className="populer-title">
+                            {item.title}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
+              </section>
 
-
-        {/* Grid Minuman Kue */}
-        <section className="section">
-          <div className="container">
-            <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-              Kue
-            </h2>
-            <div className="columns is-multiline">
-              {dummyKue.map((item, i) => (
-                <div className="column is-3" key={i}>
-                  <div className="populer-card">
-                    <img
-                      src={item.img}
-                      alt={item.title}
-                      className="populer-img"
-                    />
-                    <div className="populer-title">
-                      {item.title}
-                    </div>
+              {/* Grid Minuman Kue */}
+              <section className="section">
+                <div className="container">
+                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                    Kue
+                  </h2>
+                  <div className="columns is-multiline">
+                    {dummyKue.map((item, i) => (
+                      <div className="column is-3" key={i}>
+                        <div className="populer-card">
+                          <img
+                            src={item.img}
+                            alt={item.title}
+                            className="populer-img"
+                          />
+                          <div className="populer-title">
+                            {item.title}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              </section>
             </div>
           </div>
-        </section>
-      </div>
-      {/* Modal login bisa dibuat di sini jika showLogin true */}
-      {showLogin && (
-  <div className="modal is-active">
-    <div className="modal-background" onClick={() => { setShowLogin(false); setIsRegister(false); }}></div>
-    <div className="modal-content" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-      <div className="box" style={{ maxWidth: 400, width: "100%", borderRadius: 16, padding: 32 }}>
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <img src="https://img.icons8.com/fluency/48/chef-hat.png" alt="logo" style={{ width: 48, marginBottom: 8 }} />
-          <div style={{ fontWeight: 700, fontSize: 28, color: "#4d2600" }}>cook.io</div>
-          <div style={{ marginTop: 8, fontSize: 18, color: "#444" }}>
-            {isRegister ? "Daftar Akun Baru" : "Masuk ke Akun"}
-          </div>
-        </div>
-        <LoginForm
-          isRegister={isRegister}
-          onSuccess={user => {
-            setUser(user);
-            setShowLogin(false);
-          }}
-          onSwitch={setIsRegister}
-        />
-        <div style={{ textAlign: "center", color: "#aaa", margin: "16px 0 0 0" }}>
-          {isRegister ? (
-            <>
-              Sudah punya akun?{" "}
-              <button className="link-button" type="button" onClick={() => setIsRegister(false)}>
-                Login
-              </button>
-            </>
-          ) : (
-            <>
-              Belum punya akun?{" "}
-              <button className="link-button" type="button" onClick={() => setIsRegister(true)}>
-                Daftar
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-    <button className="modal-close is-large" aria-label="close" onClick={() => { setShowLogin(false); setIsRegister(false); }}></button>
-  </div>
-)}
-      <Routes>
-        <Route path="/login" element={<Login onSuccess={user => setUser(user)} />} />
-        {/* ...route lain */}
-      </Routes>
-    </div>
+        }
+      />
+    </Routes>
   );
 }
 
