@@ -6,11 +6,13 @@ import { useNavigate, Routes, Route } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import DashboardUser from "./pages/DashboardUser";
+import RecipeList from "./components/RecipeList";
 
 function App() {
   const [recipes, setRecipes] = useState([]);
   const [search, setSearch] = useState("");
   const [user, setUser] = useState(null);
+  const [koleksi, setKoleksi] = useState([]);
   const navigate = useNavigate();
 
   // Array dummy untuk placeholder resep populer
@@ -49,6 +51,13 @@ function App() {
     r.title.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Fungsi simpan ke koleksi
+  function handleBookmark(recipe) {
+    if (!koleksi.find(r => r.id === recipe.id)) {
+      setKoleksi([...koleksi, recipe]);
+    }
+  }
+
   // Sidebar kiri
   const Sidebar = () => (
     <aside className="menu sidebar-custom">
@@ -69,19 +78,42 @@ function App() {
             <span style={{ marginLeft: 8 }}>Premium</span>
           </a>
         </li>
+        {/* Koleksi Resep */}
         <li>
           <a>
             <span className="icon"><i className="fas fa-bookmark"></i></span>
             <span style={{ marginLeft: 8 }}>Koleksi Resep</span>
           </a>
+          {/* Jika sudah login, tampilkan submenu */}
+          {user && (
+            <ul style={{ marginLeft: 24, marginTop: 8 }}>
+              <li>
+                <a>
+                  <span className="icon"><i className="fas fa-book"></i></span>
+                  <span style={{ marginLeft: 8 }}>Semua</span>
+                  <span style={{ marginLeft: 8, fontSize: 12, color: "#888" }}>{koleksi.length} Resep</span>
+                </a>
+              </li>
+              <li>
+                <a>
+                  <span className="icon"><i className="fas fa-bookmark"></i></span>
+                  <span style={{ marginLeft: 8 }}>Tersimpan</span>
+                  <span style={{ marginLeft: 8, fontSize: 12, color: "#888" }}>{koleksi.length} Resep</span>
+                </a>
+              </li>
+            </ul>
+          )}
         </li>
       </ul>
-      <div style={{ marginTop: 32, fontSize: 14, color: "#444" }}>
-        Untuk mulai membuat koleksi resep, silakan
-        <button type="button" className="link-button" onClick={() => navigate("/login")}>masuk</button>
-        atau 
-        <button type="button" className="link-button" onClick={() => navigate("/register")}>daftar</button>
-      </div>
+      {/* Hanya tampil jika BELUM login */}
+      {!user && (
+        <div style={{ marginTop: 32, fontSize: 14, color: "#444" }}>
+          Untuk mulai membuat koleksi resep, silakan
+          <button type="button" className="link-button" onClick={() => navigate("/login")}>masuk</button>
+          atau 
+          <button type="button" className="link-button" onClick={() => navigate("/register")}>daftar</button>
+        </div>
+      )}
     </aside>
   );
 
@@ -113,6 +145,16 @@ function App() {
       {user && (
         <Route path="/dashboard" element={<DashboardUser user={user} />} />
       )}
+      <Route
+        path="/recipes"
+        element={
+          <RecipeList
+            user={user}
+            koleksi={koleksi}
+            onBookmark={handleBookmark}
+          />
+        }
+      />
       {/* Route utama (landing/dashboard) */}
       <Route
         path="*"
@@ -211,7 +253,7 @@ function App() {
                   <div className="columns is-multiline">
                     {(filteredRecipes.length === 0 ? dummyPopular : filteredRecipes.slice(0, 8)).map((item, i) => (
                       <div className="column is-3" key={item.id || i}>
-                        <div className="populer-card">
+                        <div className="populer-card" style={{ position: "relative" }}>
                           <img
                             src={item.image_url || item.img}
                             alt={item.title}
@@ -220,6 +262,35 @@ function App() {
                           <div className="populer-title">
                             {item.title}
                           </div>
+                          {/* Icon bookmark kanan bawah */}
+                          {user && (
+                            <button
+                              onClick={() => handleBookmark(item)}
+                              style={{
+                                position: "absolute",
+                                bottom: 12,
+                                right: 12,
+                                background: "rgba(255,255,255,0.8)",
+                                border: "none",
+                                borderRadius: "50%",
+                                padding: 6,
+                                cursor: "pointer"
+                              }}
+                              title="Simpan ke Koleksi"
+                            >
+                              <i
+                                className={
+                                  koleksi.find(k => k.title === item.title)
+                                    ? "fas fa-bookmark"
+                                    : "far fa-bookmark"
+                                }
+                                style={{
+                                  color: koleksi.find(k => k.title === item.title) ? "#ff914d" : "#888",
+                                  fontSize: 22
+                                }}
+                              ></i>
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -285,4 +356,3 @@ function App() {
 }
 
 export default App;
-
