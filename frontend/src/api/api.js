@@ -1,28 +1,44 @@
-const API_URL = 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-export async function getRecipes() {
-  const res = await fetch(`${API_URL}/recipes`);
-  return res.json();
-}
+export const addRecipeApi = async (formData) => {
+    const response = await fetch(`${API_BASE_URL}/recipes`, {
+        method: "POST",
+        body: formData,
+    });
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};
 
-// Fungsi login
-export async function login({ username, password }) {
-  const res = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
-  return res.json();
-}
+export const getAllRecipesApi = async () => {
+    const response = await fetch(`${API_BASE_URL}/recipes`);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};
 
-// Fungsi register
-export async function register({ username, password, nama, email }) {
-  const res = await fetch(`${API_URL}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password, nama, email }),
-  });
-  return res.json();
-}
+export const getPopularRecipesApi = async () => {
+    const response = await fetch(`${API_BASE_URL}/recipes/popular`);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};
 
-// Tambahkan fungsi lain: addRecipe, updateRecipe, deleteRecipe, dsb.
+export const getRecipesByCategoryApi = async (category) => {
+    const response = await fetch(`<span class="math-inline">\{API\_BASE\_URL\}/recipes/category/</span>{category}`);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};
+
+export const getUserRecipesApi = async (userId) => {
+    const response = await fetch(`<span class="math-inline">\{API\_BASE\_URL\}/recipes/mine/</span>{userId}`);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};

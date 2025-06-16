@@ -16,23 +16,32 @@ exports.register = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const { username, password } = req.body;
-  const user = await userModel.findByUsername(username);
-  if (!user) return res.status(400).json({ error: 'User tidak ditemukan' });
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.status(400).json({ error: 'Password salah' });
-  const token = jwt.sign(
-    { id: user.id, username: user.username, role: user.role },
-    process.env.JWT_SECRET
-  );
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      username: user.username,
-      nama: user.nama,
-      email: user.email,
-      role: user.role
+  try {
+    const { username, password } = req.body;
+    const user = await userModel.findByUsername(username);
+    if (!user) return res.status(400).json({ error: 'User tidak ditemukan' });
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).json({ error: 'Password salah' });
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not set in environment variables');
+      return res.status(500).json({ error: 'Internal server error' });
     }
-  });
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: user.role },
+      process.env.JWT_SECRET
+    );
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        nama: user.nama,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Error in login:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };

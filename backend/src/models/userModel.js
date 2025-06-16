@@ -20,3 +20,12 @@ exports.createUser = async (username, password, nama, email, role = 'user') => {
   );
   return { id: result.insertId, username, nama, email, role };
 };
+
+// Update password user
+exports.updatePassword = async (username, newHashedPassword) => {
+  const [result] = await db.query(
+    'UPDATE users SET password = ? WHERE username = ?',
+    [newHashedPassword, username]
+  );
+  return result;
+};
