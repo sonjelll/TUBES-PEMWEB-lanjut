@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import "bulma/css/bulma.min.css";
 import Navbar from "./components/Navbar";
-import { useNavigate, Routes, Route } from "react-router-dom";
+import { useNavigate, Routes, Route, Link } from "react-router-dom"; // PASTIKAN Link DI-IMPORT
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import DashboardUser from "./pages/DashboardUser";
-import RecipeList from "./components/RecipeList";
+import RecipeList from "./components/RecipeList"; // Pertahankan jika masih digunakan di tempat lain
 import RecipeAdd from "./pages/RecipeAdd";
 import RecipeMine from "./pages/RecipeMine";
+import Premium from "./pages/Premium"; // IMPORT KOMPONEN PREMIUM BARU
 
 // Import fungsi API
 import { 
@@ -18,50 +19,72 @@ import {
 } from "./api/api"; 
 
 function App() {
-  const [recipes, setRecipes] = useState([]); // Ini akan jadi semua resep (mungkin tidak perlu jika semua sudah dikategorikan)
+  const [recipes, setRecipes] = useState([]); 
   const [popularRecipes, setPopularRecipes] = useState([]);
   const [minumanRecipes, setMinumanRecipes] = useState([]);
   const [kueRecipes, setKueRecipes] = useState([]);
 
   const [search, setSearch] = useState("");
-  const [user, setUser] = useState(null);
-  const [koleksi, setKoleksi] = useState([]);
+  const [user, setUser] = useState(null); // State user untuk status login
+  const [koleksi, setKoleksi] = useState([]); // Pastikan koleksi bekerja dengan ID dari DB
   const navigate = useNavigate();
 
+  // EFFECT UNTUK MEMBACA STATUS LOGIN DARI LOCALSTORAGE SAAT APLIKASI DIMUAT
   useEffect(() => {
-    // Fetch semua resep (jika diperlukan untuk pencarian global)
-    getAllRecipesApi()
-      .then(data => setRecipes(data))
-      .catch(err => console.error("Error fetching all recipes:", err));
-
-    // Fetch resep populer
-    getPopularRecipesApi()
-      .then(data => setPopularRecipes(data))
-      .catch(err => console.error("Error fetching popular recipes:", err));
-
-    // Fetch resep minuman (Kamu perlu menambahkan kolom 'category' di DB dan mengassign kategori saat tambah resep)
-    getRecipesByCategoryApi("Minuman") // Ganti "Minuman" dengan kategori yang sesuai di DB
-      .then(data => setMinumanRecipes(data))
-      .catch(err => console.error("Error fetching minuman recipes:", err));
-
-    // Fetch resep kue (Kamu perlu menambahkan kolom 'category' di DB dan mengassign kategori saat tambah resep)
-    getRecipesByCategoryApi("Kue") // Ganti "Kue" dengan kategori yang sesuai di DB
-      .then(data => setKueRecipes(data))
-      .catch(err => console.error("Error fetching kue recipes:", err));
-
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+        localStorage.removeItem('user');
+      }
+    }
   }, []);
 
+  // EFFECT UNTUK FETCH DATA RESEP DARI BACKEND
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch semua resep (digunakan untuk pencarian global)
+        const all = await getAllRecipesApi();
+        setRecipes(all);
+
+        // Fetch resep populer
+        const popular = await getPopularRecipesApi();
+        setPopularRecipes(popular);
+
+        // Fetch resep minuman (Kamu perlu menambahkan kolom 'category' di DB dan mengassign kategori saat tambah resep)
+        const minuman = await getRecipesByCategoryApi("Minuman"); 
+        setMinumanRecipes(minuman);
+
+        // Fetch resep kue (Kamu perlu menambahkan kolom 'category' di DB dan mengassign kategori saat tambah resep)
+        const kue = await getRecipesByCategoryApi("Kue");
+        setKueRecipes(kue);
+
+      } catch (err) {
+        console.error("Error fetching recipes:", err);
+        // Pertimbangkan untuk menampilkan pesan error di UI jika fetch gagal
+      }
+    };
+
+    fetchData();
+  }, []); // [] agar hanya dijalankan sekali saat komponen pertama kali di-mount
+
+  // FILTER RESEP BERDASARKAN INPUT PENCARIAN
+  // filteredRecipes akan digunakan di bagian "Pencarian populer" saat ada input search
   const filteredRecipes = recipes.filter(r =>
     r.title.toLowerCase().includes(search.toLowerCase())
   );
 
+  // FUNGSI UNTUK MENANGANI BOOKMARK (pastikan ID resep dari DB)
   function handleBookmark(recipe) {
-    // bookmark logic, pastikan recipe.id cocok dengan id dari DB
-    if (!koleksi.find(r => r.id === recipe.id)) {
+    if (!koleksi.find(r => r.id === recipe.id)) { 
       setKoleksi([...koleksi, recipe]);
     }
   }
 
+  // KOMPONEN SIDEBAR (DIPERBAIKI DENGAN <Link>)
   const Sidebar = () => (
     <aside className="menu sidebar-custom">
       <div className="has-text-centered" style={{ marginBottom: 32 }}>
@@ -70,58 +93,65 @@ function App() {
       </div>
       <ul className="menu-list">
         <li>
-          <a className="is-active sidebar-active">
+          {/* Link ke Homepage/Root untuk 'Cari' */}
+          <Link to="/" className="is-active sidebar-active">
             <span className="icon" style={{ color: "#ff914d" }}><i className="fas fa-search"></i></span>
             <span style={{ color: "#ff914d", fontWeight: 600, marginLeft: 8 }}>Cari</span>
-          </a>
+          </Link>
         </li>
         <li>
-          <a>
+          {/* Link ke halaman Premium */}
+          <Link to="/premium"> 
             <span className="icon"><i className="fas fa-crown"></i></span>
             <span style={{ marginLeft: 8 }}>Premium</span>
-          </a>
+          </Link>
         </li>
-        {user && (
+        {user && ( // Tampilkan menu ini hanya jika user sudah login
           <>
             <li>
-              <a onClick={() => navigate("/tambah-resep")}>
+              {/* Link ke halaman Tambah Resep */}
+              <Link to="/tambah-resep">
                 <span className="icon"><i className="fas fa-plus-circle"></i></span>
                 <span style={{ marginLeft: 8 }}>Tambah Resep</span>
-              </a>
+              </Link>
             </li>
             <li>
-              <a onClick={() => navigate("/resep-saya")}>
+              {/* Link ke halaman Resep Saya */}
+              <Link to="/resep-saya">
                 <span className="icon"><i className="fas fa-user"></i></span>
                 <span style={{ marginLeft: 8 }}>Resep Saya</span>
-              </a>
+              </Link>
             </li>
           </>
         )}
         <li>
-          <a>
+          {/* Link ke halaman Koleksi Resep (contoh) */}
+          <Link to="/koleksi-resep"> 
             <span className="icon"><i className="fas fa-bookmark"></i></span>
             <span style={{ marginLeft: 8 }}>Koleksi Resep</span>
-          </a>
-          {user && (
+          </Link>
+          {user && ( // Tampilkan submenu ini hanya jika user sudah login
             <ul style={{ marginLeft: 24, marginTop: 8 }}>
               <li>
-                <a>
+                {/* Link ke halaman Semua Koleksi */}
+                <Link to="/koleksi-resep/semua">
                   <span className="icon"><i className="fas fa-book"></i></span>
                   <span style={{ marginLeft: 8 }}>Semua</span>
                   <span style={{ marginLeft: 8, fontSize: 12, color: "#888" }}>{koleksi.length} Resep</span>
-                </a>
+                </Link>
               </li>
               <li>
-                <a>
+                {/* Link ke halaman Koleksi Tersimpan */}
+                <Link to="/koleksi-resep/tersimpan">
                   <span className="icon"><i className="fas fa-bookmark"></i></span>
                   <span style={{ marginLeft: 8, fontSize: 12, color: "#888" }}>{koleksi.length} Resep</span>
-                </a>
+                </Link>
               </li>
             </ul>
           )}
         </li>
       </ul>
-      {!user && (
+      {!user && ( // Tampilkan ini hanya jika user BELUM login
         <div style={{ marginTop: 32, fontSize: 14, color: "#444" }}>
           Untuk mulai membuat koleksi resep, silakan
           <button type="button" className="link-button" onClick={() => navigate("/login")}>masuk</button>
@@ -134,13 +164,15 @@ function App() {
 
   return (
     <Routes>
+      {/* ROUTE UTAMA APLIKASI */}
       <Route
         path="/login"
         element={
-          <Login
-            onSuccess={user => {
-              setUser(user);
-              navigate("/");
+          <Login // KOMPONEN LOGIN DARI PAGES/LOGIN.JS
+            onSuccess={loggedInUser => { // Terima user dari Login component
+              setUser(loggedInUser);
+              localStorage.setItem('user', JSON.stringify(loggedInUser)); // Simpan di localStorage
+              navigate("/"); // Arahkan ke homepage setelah login
             }}
           />
         }
@@ -148,17 +180,21 @@ function App() {
       <Route
         path="/register"
         element={
-          <Register
-            onSuccess={user => {
-              setUser(user);
-              navigate("/dashboard");
+          <Register // KOMPONEN REGISTER DARI PAGES/REGISTER.JS
+            onSuccess={registeredUser => { // Terima user dari Register component
+              // setUser(registeredUser); // Mungkin tidak perlu set user langsung setelah register, karena harus login dulu
+              navigate("/login"); // Arahkan ke halaman login setelah register
             }}
           />
         }
       />
+      
+      {/* Route untuk Dashboard User (hanya jika sudah login) */}
       {user && (
         <Route path="/dashboard" element={<DashboardUser user={user} />} />
       )}
+
+      {/* Route untuk daftar resep umum (jika ada halaman terpisah) */}
       <Route
         path="/recipes"
         element={
@@ -169,24 +205,48 @@ function App() {
           />
         }
       />
-      <Route path="/tambah-resep" element={<RecipeAdd />} />
+      
+      {/* Route untuk Tambah Resep */}
+      <Route path="/tambah-resep" element={<RecipeAdd />} /> 
+      
+      {/* Route untuk Resep Saya */}
       <Route path="/resep-saya" element={<RecipeMine />} />
 
+      {/* ROUTE UNTUK HALAMAN PREMIUM */}
+      <Route 
+        path="/premium" 
+        element={
+          <Premium 
+            user={user} 
+            onLogout={() => { 
+              setUser(null); 
+              localStorage.removeItem("token");
+              localStorage.removeItem("user"); // Hapus juga info user dari localStorage
+              navigate("/"); // Arahkan ke homepage setelah logout
+            }} 
+          />
+        } 
+      />
+
+      {/* Route Wildcard (*) - Ini adalah HOME PAGE atau FALLBACK */}
       <Route
-        path="*"
+        path="*" // Matches any path not matched above
         element={
           <div style={{ display: "flex", minHeight: "100vh" }}>
             <Sidebar />
             <div style={{ marginLeft: 220, flex: 1 }}>
               <Navbar
                 onLoginClick={() => navigate("/login")}
-                user={user}
+                user={user} // Pass user state to Navbar
                 onLogout={() => {
                   setUser(null);
                   localStorage.removeItem("token");
+                  localStorage.removeItem("user"); // Hapus juga info user dari localStorage
+                  navigate("/"); // Arahkan ke homepage setelah logout
                 }}
               />
 
+              {/* HERO SECTION */}
               <section
                 className="hero is-medium"
                 style={{
@@ -266,8 +326,8 @@ function App() {
                     Pencarian populer
                   </h2>
                   <div className="columns is-multiline">
-                    {/* Gunakan popularRecipes dari fetch backend */}
-                    {popularRecipes.map((item, i) => (
+                    {/* Gunakan popularRecipes dari fetch backend. Jika ada search, gunakan filteredRecipes */}
+                    {(search.length > 0 ? filteredRecipes : popularRecipes).map((item, i) => (
                       <div className="column is-3" key={item.id || i}>
                         <div className="populer-card" style={{ position: "relative" }}>
                           <img
@@ -278,7 +338,7 @@ function App() {
                           <div className="populer-title">
                             {item.title}
                           </div>
-                          {user && (
+                          {user && ( // Tampilkan bookmark hanya jika user login
                             <button
                               onClick={() => handleBookmark(item)}
                               style={{
@@ -317,7 +377,7 @@ function App() {
               <section className="section">
                 <div className="container">
                   <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-                    Minuman
+                    Minuman 
                   </h2>
                   <div className="columns is-multiline">
                     {minumanRecipes.map((item, i) => (
