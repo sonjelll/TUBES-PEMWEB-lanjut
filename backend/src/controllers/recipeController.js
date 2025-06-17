@@ -1,34 +1,43 @@
-const db = require('../db'); // Import koneksi database
+// backend/src/controllers/recipeController.js
+const db = require('../db'); // Import koneksi database (path sudah benar dari src/controllers)
 const path = require('path');
-const fs = require('fs'); // Node.js built-in for file system operations
+const fs = require('fs');
 
-// Pastikan folder uploads ada
-const uploadsDir = path.join(__dirname, 'backend/uploads');
+// --- PERBAIKAN: Path untuk uploadsDir ---
+// __dirname adalah D:\PEMWEB-TUBES\backend\src\controllers
+// ../../../ akan membawa kita ke D:\PEMWEB-TUBES\backend
+// Lalu masuk ke folder 'uploads'
+const uploadsDir = path.join(__dirname, '../../../uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 // Fungsi untuk menambah resep baru
 exports.addRecipe = async (req, res) => {
-    // --- KUNCI: Ambil 'kategori' dari req.body ---
+    // --- PERBAIKAN: Ambil variabel dari req.body sesuai nama dari frontend ---
+    // Pastikan nama variabel di sini sesuai dengan yang dikirim dari FormData di frontend (RecipeForm.js)
     const { namaPembuat, judulResep, alatBahan, caraMembuat, kategori } = req.body;
     let imageUrl = null;
 
     if (req.file) {
+        // req.file.filename adalah nama file yang sudah disimpan Multer
         imageUrl = `${process.env.APP_URL || `http://localhost:${process.env.PORT}`}/uploads/${req.file.filename}`;
     }
 
-    // Asumsi user_id diambil dari token autentikasi atau sesi
-    const user_id = req.user ? req.user.id : 1; // Jika ada req.user dari middleware auth, gunakan itu. Default 1.
+    // --- PERBAIKAN: Deklarasi user_id sekali saja dan ambil dari req.user (middleware auth) atau default ---
+    // Ini userId dari user yang login (jika ada middleware auth)
+    // Jika tidak ada user login atau middleware auth, gunakan default (misal: 1)
+    const userId = req.user ? req.user.id : 1; 
 
-    // --- KUNCI: Tambahkan 'category' ke query INSERT ---
-    // Sesuaikan nama kolom: description di DB = caraMembuat, ingredients di DB = alatBahan
+    // --- PERBAIKAN PENTING: Gunakan nama kolom database yang BENAR di query INSERT ---
+    // - 'ingredients' untuk 'alatBahan'
+    // - 'description' untuk 'caraMembuat'
     const query = `
-        INSERT INTO recipes (user_id, title, alatBahan, caraMembuat, category, image_url)
+        INSERT INTO recipes (user_id, title, ingredients, description, category, image_url)
         VALUES (?, ?, ?, ?, ?, ?)
     `;
-    // --- KUNCI: Tambahkan 'kategori' ke array values ---
-    const values = [user_id, judulResep, alatBahan, caraMembuat, kategori, imageUrl];
+    // --- Pastikan urutan values sesuai dengan urutan kolom di query ---
+    const values = [userId, judulResep, alatBahan, caraMembuat, kategori, imageUrl];
 
     try {
         const [result] = await db.execute(query, values);
@@ -36,31 +45,32 @@ exports.addRecipe = async (req, res) => {
             message: 'Resep berhasil ditambahkan!',
             recipe: {
                 id: result.insertId,
-                user_id: user_id,
-                namaPembuat, // Perlu dicatat, namaPembuat tidak disimpan di tabel recipes sesuai skema kamu. Jika perlu, tambahkan.
+                user_id: userId,
+                namaPembuat, // Ini nama pembuat dari frontend, tidak disimpan di tabel 'recipes' di DB
                 judulResep,
-                alatBahan,
-                caraMembuat,
-                kategori, // Termasuk kategori di respons
+                alatBahan, // Ini nilai 'alatBahan' yang datang dari frontend
+                caraMembuat, // Ini nilai 'caraMembuat' yang datang dari frontend
+                kategori, 
                 image_url: imageUrl
             }
         });
     } catch (error) {
         console.error('Error adding recipe:', error);
-        // Jika ada error saat menyimpan ke DB, hapus file yang sudah diupload
+        // Jika ada error saat menyimpan ke DB, hapus file yang sudah diupload untuk membersihkan
         if (req.file) {
             fs.unlink(req.file.path, (err) => {
-                if (err) console.error('Error deleting uploaded file:', err);
+                if (err) console.error('Error deleting uploaded file on DB error:', err);
             });
         }
         res.status(500).json({ message: 'Gagal menambahkan resep.', error: error.message });
     }
 };
 
-// Fungsi untuk mendapatkan semua resep (pastikan mengambil kolom 'category' juga)
+// Fungsi untuk mendapatkan semua resep
 exports.getAllRecipes = async (req, res) => {
     try {
-        const [rows] = await db.execute(`SELECT id, user_id, title, alatBahan, caraMembuat, category, image_url, created_at FROM recipes`);
+        // --- PERBAIKAN PENTING: Gunakan nama kolom database yang BENAR di query SELECT ---
+        const [rows] = await db.execute(`SELECT id, user_id, title, ingredients, description, category, image_url, created_at FROM recipes`);
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching recipes:', error);
@@ -70,9 +80,12 @@ exports.getAllRecipes = async (req, res) => {
 
 // Fungsi untuk mendapatkan resep saya (berdasarkan user_id)
 exports.getUserRecipes = async (req, res) => {
-    const { userId } = req.params; // Untuk contoh ini kita pakai params, tapi hati-hati di produksi
+    // userId di sini harusnya diambil dari req.user.id setelah autentikasi untuk keamanan
+    // Mengambil dari req.params.userId untuk contoh, tapi hati-hati di produksi tanpa auth
+    const { userId } = req.params; 
     try {
-        const [rows] = await db.execute(`SELECT id, user_id, title, alatBahan, caraMembuat, category, image_url, created_at FROM recipes WHERE user_id = ?`, [userId]);
+        // --- PERBAIKAN PENTING: Gunakan nama kolom database yang BENAR di query SELECT ---
+        const [rows] = await db.execute(`SELECT id, user_id, title, ingredients, description, category, image_url, created_at FROM recipes WHERE user_id = ?`, [userId]);
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching user recipes:', error);
@@ -83,7 +96,8 @@ exports.getUserRecipes = async (req, res) => {
 // Fungsi untuk mendapatkan resep populer (contoh: 8 resep terbaru)
 exports.getPopularRecipes = async (req, res) => {
     try {
-        const [rows] = await db.execute(`SELECT id, user_id, title, alatBahan, caraMembuat, category, image_url, created_at FROM recipes ORDER BY id DESC LIMIT 8`);
+        // --- PERBAIKAN PENTING: Gunakan nama kolom database yang BENAR di query SELECT ---
+        const [rows] = await db.execute(`SELECT id, user_id, title, ingredients, description, category, image_url, created_at FROM recipes ORDER BY id DESC LIMIT 8`);
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching popular recipes:', error);
@@ -93,9 +107,10 @@ exports.getPopularRecipes = async (req, res) => {
 
 // Fungsi untuk mendapatkan resep berdasarkan kategori
 exports.getRecipesByCategory = async (req, res) => {
-    const { categoryName } = req.params; // Asumsi categoryName dikirim di URL
+    const { categoryName } = req.params;
     try {
-        const [rows] = await db.execute(`SELECT id, user_id, title, alatBahan, caraMembuat, category, image_url, created_at FROM recipes WHERE category = ?`, [categoryName]);
+        // --- PERBAIKAN PENTING: Gunakan nama kolom database yang BENAR di query SELECT ---
+        const [rows] = await db.execute(`SELECT id, user_id, title, ingredients, description, category, image_url, created_at FROM recipes WHERE category = ?`, [categoryName]);
         res.status(200).json(rows);
     } catch (error) {
         console.error(`Error fetching ${categoryName} recipes:`, error);
