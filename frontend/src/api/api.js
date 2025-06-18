@@ -1,8 +1,12 @@
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 export const addRecipeApi = async (formData) => {
+    const token = localStorage.getItem('token');
     const response = await fetch(`${API_BASE_URL}/recipes`, {
         method: "POST",
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
         body: formData,
     });
     if (!response.ok) {
@@ -28,15 +32,58 @@ export const getPopularRecipesApi = async () => {
 };
 
 export const getRecipesByCategoryApi = async (category) => {
-    const response = await fetch(`<span class="math-inline">\{API\_BASE\_URL\}/recipes/category/</span>{category}`);
+    const response = await fetch(`${API_BASE_URL}/recipes/category/${category}`);
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
     return response.json();
 };
 
-export const getUserRecipesApi = async (userId) => {
-    const response = await fetch(`<span class="math-inline">\{API\_BASE\_URL\}/recipes/mine/</span>{userId}`);
+export const getUserRecipesApi = async () => {
+    const token = localStorage.getItem('token'); // Ambil token dari localStorage
+    const response = await fetch(`${API_BASE_URL}/recipes/mine`, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};
+
+export const getRecipeByIdApi = async (id) => {
+    const response = await fetch(`${API_BASE_URL}/recipes/${id}`);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};
+
+export const updateRecipeApi = async (id, formData) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/recipes/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+        body: formData
+    });
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};
+
+export const deleteRecipeApi = async (id) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/recipes/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }

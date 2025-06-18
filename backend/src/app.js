@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Sajikan folder 'uploads' secara statis agar gambar bisa diakses dari frontend
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads'))); // Koreksi path ke d:\PEMWEB-TUBES\backend\uploads
 
 // Routes
 app.use('/api/recipes', recipeRoutes);

@@ -2,13 +2,16 @@ import RecipeForm from "../components/RecipeForm";
 import { useNavigate } from "react-router-dom";
 import { addRecipeApi } from "../api/api"; // Import fungsi API
 
-export default function RecipeAdd() {
+export default function RecipeAdd({ onRefresh }) {
   const navigate = useNavigate();
 
   const handleAdd = async (formData) => {
     try {
       await addRecipeApi(formData); // Gunakan fungsi API
       alert("Resep berhasil ditambahkan!");
+      if (onRefresh) {
+        onRefresh(); // Panggil fungsi refresh dari parent untuk update data kategori
+      }
       navigate("/resep-saya");
     } catch (error) {
       console.error("Gagal menambahkan resep:", error);

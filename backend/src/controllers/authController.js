@@ -27,7 +27,7 @@ exports.login = async (req, res) => {
       return res.status(500).json({ error: 'Internal server error' });
     }
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
+      { id: user.id, username: user.username, nama: user.nama, role: user.role }, // Tambahkan user.nama ke payload token
       process.env.JWT_SECRET
     );
     res.json({
@@ -35,7 +35,7 @@ exports.login = async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
-        nama: user.nama,
+        nama: user.nama, // Koreksi typo
         email: user.email,
         role: user.role
       }

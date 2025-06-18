@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 // Simulasi API
 const dummyRecipes = [
@@ -36,7 +37,9 @@ export default function RecipeList({ koleksi, setKoleksi, user }) {
             marginBottom: 10,
             background: "#fff"
           }}>
-            <span>{r.title}</span>
+            <Link to={`/recipe-detail/${r.id}`} style={{ flexGrow: 1, textDecoration: "none", color: "inherit" }} onClick={(e) => e.stopPropagation()}>
+              {r.title}
+            </Link>
             {user && (
               <button
                 onClick={() => handleBookmark(r)}

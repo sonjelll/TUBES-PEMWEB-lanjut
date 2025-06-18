@@ -1,13 +1,13 @@
 import { useState } from "react";
 
-export default function RecipeForm({ onAdd }) {
-  const [namaPembuat, setNamaPembuat] = useState("");
-  const [judulResep, setJudulResep] = useState("");
-  const [alatBahan, setAlatBahan] = useState("");
-  const [caraMembuat, setCaraMembuat] = useState("");
-  const [kategori, setKategori] = useState(""); // Tambah state kategori
+export default function RecipeForm({ onAdd, initialData }) {
+  const [namaPembuat, setNamaPembuat] = useState(initialData?.namaPembuat || "");
+  const [judulResep, setJudulResep] = useState(initialData?.judulResep || "");
+  const [alatBahan, setAlatBahan] = useState(initialData?.alatBahan || "");
+  const [caraMembuat, setCaraMembuat] = useState(initialData?.caraMembuat || "");
+  const [kategori, setKategori] = useState(initialData?.kategori || ""); // Tambah state kategori
   const [gambar, setGambar] = useState(null); // Ini akan menyimpan objek File
-  const [preview, setPreview] = useState(null);
+  const [preview, setPreview] = useState(initialData?.image_url || null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -113,9 +113,11 @@ export default function RecipeForm({ onAdd }) {
           <div className="select is-fullwidth">
             <select value={kategori} onChange={(e) => setKategori(e.target.value)}>
               <option value="">Pilih kategori</option>
-              <option value="Populer">Populer</option>
-              <option value="Minuman">Minuman</option>
-              <option value="Kue">Kue</option>
+              <option value="Makanan Berat">Makanan Berat</option>
+              <option value="Cemilan / Snack">Cemilan / Snack</option>
+              <option value="Sarapan">Sarapan</option>
+              <option value="Makanan Sehat">Makanan Sehat</option>
+              <option value="Masakan Tradisional Indonesia">Masakan Tradisional Indonesia</option>
             </select>
           </div>
         </div>

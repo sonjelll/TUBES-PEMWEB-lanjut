@@ -1,31 +1,48 @@
 import React, { useEffect, useState } from "react";
-import { getUserRecipesApi } from "../api/api"; // Import fungsi API
+import { useNavigate } from "react-router-dom";
+import { getUserRecipesApi, deleteRecipeApi } from "../api/api"; // Import fungsi API
 
 export default function RecipeMine() {
   const [myRecipes, setMyRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   // Untuk userId, idealnya diambil dari konteks user yang login
   // Untuk sementara, kita bisa hardcode atau ambil dari localStorage jika user ID tersimpan di sana
   const dummyUserId = 1; // Ganti dengan ID user asli yang login
 
-  useEffect(() => {
-    const fetchMyRecipes = async () => {
-      try {
-        setLoading(true);
-        const data = await getUserRecipesApi(dummyUserId); // Gunakan fungsi API
-        setMyRecipes(data);
-      } catch (err) {
-        setError(err.message);
-        console.error("Failed to fetch my recipes:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchMyRecipes = async () => {
+    try {
+      setLoading(true);
+      const data = await getUserRecipesApi(dummyUserId); // Gunakan fungsi API
+      setMyRecipes(data);
+    } catch (err) {
+      setError(err.message);
+      console.error("Failed to fetch my recipes:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchMyRecipes();
   }, [dummyUserId]); // Dependensi dummyUserId jika berubah (misal dari context)
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus resep ini?")) return;
+    try {
+      await deleteRecipeApi(id);
+      alert("Resep berhasil dihapus");
+      fetchMyRecipes(); // Refresh data setelah hapus
+    } catch (err) {
+      alert("Gagal menghapus resep: " + err.message);
+    }
+  };
+
+  const handleEdit = (id) => {
+    navigate(`/edit-resep/${id}`);
+  };
 
   if (loading) {
     return <div style={{ textAlign: "center", padding: "20px" }}>Memuat resep...</div>;
@@ -61,6 +78,10 @@ export default function RecipeMine() {
                     <p>{recipe.ingredients}</p> {/* Asumsi kolom 'ingredients' di DB */}
                     <strong>Cara Membuat:</strong>
                     <p>{recipe.description}</p> {/* Asumsi kolom 'description' di DB untuk cara membuat */}
+                  </div>
+                  <div className="buttons is-right">
+                    <button className="button is-info" onClick={() => handleEdit(recipe.id)}>Edit</button>
+                    <button className="button is-danger" onClick={() => handleDelete(recipe.id)}>Hapus</button>
                   </div>
                 </div>
               </div>

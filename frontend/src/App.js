@@ -9,18 +9,25 @@ import DashboardUser from "./pages/DashboardUser";
 import RecipeList from "./components/RecipeList"; // Pertahankan jika masih digunakan di tempat lain
 import RecipeAdd from "./pages/RecipeAdd";
 import RecipeMine from "./pages/RecipeMine";
+import RecipeEdit from "./pages/RecipeEdit";
+import RecipeDetail from "./pages/RecipeDetail";
 import Premium from "./pages/Premium"; // IMPORT KOMPONEN PREMIUM BARU
 
 // Import fungsi API
 import { 
   getAllRecipesApi, 
-  getPopularRecipesApi, 
+  // getPopularRecipesApi, 
   getRecipesByCategoryApi 
 } from "./api/api"; 
 
 function App() {
   const [recipes, setRecipes] = useState([]); 
-  const [popularRecipes, setPopularRecipes] = useState([]);
+  // const [popularRecipes, setPopularRecipes] = useState([]);
+  const [makananBeratRecipes, setMakananBeratRecipes] = useState([]);
+  const [cemilanRecipes, setCemilanRecipes] = useState([]);
+  const [sarapanRecipes, setSarapanRecipes] = useState([]);
+  const [makananSehatRecipes, setMakananSehatRecipes] = useState([]);
+  const [masakanTradisionalRecipes, setMasakanTradisionalRecipes] = useState([]);
   const [minumanRecipes, setMinumanRecipes] = useState([]);
   const [kueRecipes, setKueRecipes] = useState([]);
 
@@ -50,15 +57,25 @@ function App() {
         const all = await getAllRecipesApi();
         setRecipes(all);
 
-        // Fetch resep populer
-        const popular = await getPopularRecipesApi();
-        setPopularRecipes(popular);
+        // Fetch resep per kategori
+        const makananBerat = await getRecipesByCategoryApi("Makanan Berat");
+        setMakananBeratRecipes(makananBerat);
 
-        // Fetch resep minuman (Kamu perlu menambahkan kolom 'category' di DB dan mengassign kategori saat tambah resep)
+        const cemilan = await getRecipesByCategoryApi("Cemilan / Snack");
+        setCemilanRecipes(cemilan);
+
+        const sarapan = await getRecipesByCategoryApi("Sarapan");
+        setSarapanRecipes(sarapan);
+
+        const makananSehat = await getRecipesByCategoryApi("Makanan Sehat");
+        setMakananSehatRecipes(makananSehat);
+
+        const masakanTradisional = await getRecipesByCategoryApi("Masakan Tradisional Indonesia");
+        setMasakanTradisionalRecipes(masakanTradisional);
+
         const minuman = await getRecipesByCategoryApi("Minuman"); 
         setMinumanRecipes(minuman);
 
-        // Fetch resep kue (Kamu perlu menambahkan kolom 'category' di DB dan mengassign kategori saat tambah resep)
         const kue = await getRecipesByCategoryApi("Kue");
         setKueRecipes(kue);
 
@@ -162,6 +179,40 @@ function App() {
     </aside>
   );
 
+  const fetchData = async () => {
+    try {
+      // Fetch semua resep (digunakan untuk pencarian global)
+      const all = await getAllRecipesApi();
+      setRecipes(all);
+
+      // Fetch resep per kategori
+      const makananBerat = await getRecipesByCategoryApi("Makanan Berat");
+      setMakananBeratRecipes(makananBerat);
+
+      const cemilan = await getRecipesByCategoryApi("Cemilan / Snack");
+      setCemilanRecipes(cemilan);
+
+      const sarapan = await getRecipesByCategoryApi("Sarapan");
+      setSarapanRecipes(sarapan);
+
+      const makananSehat = await getRecipesByCategoryApi("Makanan Sehat");
+      setMakananSehatRecipes(makananSehat);
+
+      const masakanTradisional = await getRecipesByCategoryApi("Masakan Tradisional Indonesia");
+      setMasakanTradisionalRecipes(masakanTradisional);
+
+      const minuman = await getRecipesByCategoryApi("Minuman"); 
+      setMinumanRecipes(minuman);
+
+      const kue = await getRecipesByCategoryApi("Kue");
+      setKueRecipes(kue);
+
+    } catch (err) {
+      console.error("Error fetching recipes:", err);
+      // Pertimbangkan untuk menampilkan pesan error di UI jika fetch gagal
+    }
+  };
+
   return (
     <Routes>
       {/* ROUTE UTAMA APLIKASI */}
@@ -207,10 +258,16 @@ function App() {
       />
       
       {/* Route untuk Tambah Resep */}
-      <Route path="/tambah-resep" element={<RecipeAdd />} /> 
+      <Route path="/tambah-resep" element={<RecipeAdd onRefresh={fetchData} />} /> 
       
       {/* Route untuk Resep Saya */}
       <Route path="/resep-saya" element={<RecipeMine />} />
+
+      {/* Route untuk Edit Resep */}
+      <Route path="/edit-resep/:id" element={<RecipeEdit />} />
+
+      {/* Route untuk Detail Resep */}
+      <Route path="/recipe-detail/:id" element={<RecipeDetail />} />
 
       {/* ROUTE UNTUK HALAMAN PREMIUM */}
       <Route 
@@ -322,14 +379,69 @@ function App() {
               {/* Grid Resep Populer */}
               <section className="section">
                 <div className="container">
+              <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                Menu Terbaru
+              </h2>
+              <div className="columns is-multiline">
+                {/* Gunakan recipes dari fetch backend, urutkan terbaru di atas */}
+{(search.length > 0 ? filteredRecipes : recipes.slice().reverse()).slice(0, 8).map((item, i) => (
+  <div className="column is-3" key={item.id || i}>
+    <div className="populer-card" style={{ position: "relative" }}>
+      <img
+        src={item.image_url}
+        alt={item.title || item.judulResep}
+        className="populer-img"
+      />
+      <div className="populer-title">
+        <Link to={`/recipe-detail/${item.id}`} style={{ color: "inherit", textDecoration: "none" }}>
+          {item.title || item.judulResep}
+        </Link>
+      </div>
+      {user && ( // Tampilkan bookmark hanya jika user login
+        <button
+          onClick={() => handleBookmark(item)}
+          style={{
+            position: "absolute",
+            bottom: 12,
+            right: 12,
+            background: "rgba(255,255,255,0.8)",
+            border: "none",
+            borderRadius: "50%",
+            padding: 6,
+            cursor: "pointer"
+          }}
+          title="Simpan ke Koleksi"
+        >
+          <i
+            className={
+              koleksi.find(k => k.id === item.id)
+                ? "fas fa-bookmark"
+                : "far fa-bookmark"
+            }
+            style={{
+              color: koleksi.find(k => k.id === item.id) ? "#ff914d" : "#888",
+              fontSize: 22
+            }}
+          ></i>
+        </button>
+      )}
+    </div>
+  </div>
+))}
+              </div>
+            </div>
+          </section>
+
+              {/* Grid Makanan Berat */}
+              <section className="section">
+                <div className="container">
                   <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-                    Pencarian populer
+                    Makanan Berat
                   </h2>
                   <div className="columns is-multiline">
-                    {/* Gunakan popularRecipes dari fetch backend. Jika ada search, gunakan filteredRecipes */}
-                    {(search.length > 0 ? filteredRecipes : popularRecipes).map((item, i) => (
+                    {makananBeratRecipes.map((item, i) => (
                       <div className="column is-3" key={item.id || i}>
-                        <div className="populer-card" style={{ position: "relative" }}>
+                        <div className="populer-card">
                           <img
                             src={item.image_url}
                             alt={item.title}
@@ -338,34 +450,106 @@ function App() {
                           <div className="populer-title">
                             {item.title}
                           </div>
-                          {user && ( // Tampilkan bookmark hanya jika user login
-                            <button
-                              onClick={() => handleBookmark(item)}
-                              style={{
-                                position: "absolute",
-                                bottom: 12,
-                                right: 12,
-                                background: "rgba(255,255,255,0.8)",
-                                border: "none",
-                                borderRadius: "50%",
-                                padding: 6,
-                                cursor: "pointer"
-                              }}
-                              title="Simpan ke Koleksi"
-                            >
-                              <i
-                                className={
-                                  koleksi.find(k => k.id === item.id)
-                                    ? "fas fa-bookmark"
-                                    : "far fa-bookmark"
-                                }
-                                style={{
-                                  color: koleksi.find(k => k.id === item.id) ? "#ff914d" : "#888",
-                                  fontSize: 22
-                                }}
-                              ></i>
-                            </button>
-                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Grid Cemilan / Snack */}
+              <section className="section">
+                <div className="container">
+                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                    Cemilan / Snack
+                  </h2>
+                  <div className="columns is-multiline">
+                    {cemilanRecipes.map((item, i) => (
+                      <div className="column is-3" key={item.id || i}>
+                        <div className="populer-card">
+                          <img
+                            src={item.image_url}
+                            alt={item.title}
+                            className="populer-img"
+                          />
+                          <div className="populer-title">
+                            {item.title}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Grid Sarapan */}
+              <section className="section">
+                <div className="container">
+                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                    Sarapan
+                  </h2>
+                  <div className="columns is-multiline">
+                    {sarapanRecipes.map((item, i) => (
+                      <div className="column is-3" key={item.id || i}>
+                        <div className="populer-card">
+                          <img
+                            src={item.image_url}
+                            alt={item.title}
+                            className="populer-img"
+                          />
+                          <div className="populer-title">
+                            {item.title}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Grid Makanan Sehat */}
+              <section className="section">
+                <div className="container">
+                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                    Makanan Sehat
+                  </h2>
+                  <div className="columns is-multiline">
+                    {makananSehatRecipes.map((item, i) => (
+                      <div className="column is-3" key={item.id || i}>
+                        <div className="populer-card">
+                          <img
+                            src={item.image_url}
+                            alt={item.title}
+                            className="populer-img"
+                          />
+                          <div className="populer-title">
+                            {item.title}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Grid Masakan Tradisional Indonesia */}
+              <section className="section">
+                <div className="container">
+                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                    Masakan Tradisional Indonesia
+                  </h2>
+                  <div className="columns is-multiline">
+                    {masakanTradisionalRecipes.map((item, i) => (
+                      <div className="column is-3" key={item.id || i}>
+                        <div className="populer-card">
+                          <img
+                            src={item.image_url}
+                            alt={item.title}
+                            className="populer-img"
+                          />
+                          <div className="populer-title">
+                            {item.title}
+                          </div>
                         </div>
                       </div>
                     ))}
