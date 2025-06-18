@@ -23,6 +23,10 @@ const Recipe = db.define('Recipe', {
         type: DataTypes.TEXT,
         allowNull: true // Bisa null jika tidak wajib
     },
+    category: { // Tambahkan kolom kategori
+        type: DataTypes.STRING(255),
+        allowNull: false
+    },
     image_url: {
         type: DataTypes.STRING(255),
         allowNull: true // Bisa null jika gambar tidak wajib

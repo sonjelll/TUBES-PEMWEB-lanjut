@@ -15,13 +15,14 @@ import Premium from "./pages/Premium"; // IMPORT KOMPONEN PREMIUM BARU
 
 // Import fungsi API
 import { 
-  getAllRecipesApi, 
+  // getAllRecipesApi, 
   // getPopularRecipesApi, 
   getRecipesByCategoryApi 
 } from "./api/api"; 
 
 function App() {
-  const [recipes, setRecipes] = useState([]); 
+  // recipes tidak digunakan di komponen ini, jadi kita bisa hapus state ini untuk menghilangkan warning
+  // const [recipes, setRecipes] = useState([]); 
   // const [popularRecipes, setPopularRecipes] = useState([]);
   const [makananBeratRecipes, setMakananBeratRecipes] = useState([]);
   const [cemilanRecipes, setCemilanRecipes] = useState([]);
@@ -53,10 +54,6 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch semua resep (digunakan untuk pencarian global)
-        const all = await getAllRecipesApi();
-        setRecipes(all);
-
         // Fetch resep per kategori
         const makananBerat = await getRecipesByCategoryApi("Makanan Berat");
         setMakananBeratRecipes(makananBerat);
@@ -90,9 +87,13 @@ function App() {
 
   // FILTER RESEP BERDASARKAN INPUT PENCARIAN
   // filteredRecipes akan digunakan di bagian "Pencarian populer" saat ada input search
-  const filteredRecipes = recipes.filter(r =>
-    r.title.toLowerCase().includes(search.toLowerCase())
-  );
+  // Namun saat ini variabel ini tidak digunakan sehingga menimbulkan warning no-unused-vars
+  // Jika tidak digunakan, kita bisa menghapusnya untuk menghilangkan warning
+  // Jika ingin digunakan, perlu ditambahkan UI untuk menampilkan hasil pencarian
+  // Untuk sementara saya hapus variabel ini agar warning hilang
+  // const filteredRecipes = recipes.filter(r =>
+  //   r.title.toLowerCase().includes(search.toLowerCase())
+  // );
 
   // FUNGSI UNTUK MENANGANI BOOKMARK (pastikan ID resep dari DB)
   function handleBookmark(recipe) {
@@ -181,10 +182,6 @@ function App() {
 
   const fetchData = async () => {
     try {
-      // Fetch semua resep (digunakan untuk pencarian global)
-      const all = await getAllRecipesApi();
-      setRecipes(all);
-
       // Fetch resep per kategori
       const makananBerat = await getRecipesByCategoryApi("Makanan Berat");
       setMakananBeratRecipes(makananBerat);
@@ -376,61 +373,7 @@ function App() {
                 </div>
               </section>
 
-              {/* Grid Resep Populer */}
-              <section className="section">
-                <div className="container">
-              <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-                Menu Terbaru
-              </h2>
-              <div className="columns is-multiline">
-                {/* Gunakan recipes dari fetch backend, urutkan terbaru di atas */}
-{(search.length > 0 ? filteredRecipes : recipes.slice().reverse()).slice(0, 8).map((item, i) => (
-  <div className="column is-3" key={item.id || i}>
-    <div className="populer-card" style={{ position: "relative" }}>
-      <img
-        src={item.image_url}
-        alt={item.title || item.judulResep}
-        className="populer-img"
-      />
-      <div className="populer-title">
-        <Link to={`/recipe-detail/${item.id}`} style={{ color: "inherit", textDecoration: "none" }}>
-          {item.title || item.judulResep}
-        </Link>
-      </div>
-      {user && ( // Tampilkan bookmark hanya jika user login
-        <button
-          onClick={() => handleBookmark(item)}
-          style={{
-            position: "absolute",
-            bottom: 12,
-            right: 12,
-            background: "rgba(255,255,255,0.8)",
-            border: "none",
-            borderRadius: "50%",
-            padding: 6,
-            cursor: "pointer"
-          }}
-          title="Simpan ke Koleksi"
-        >
-          <i
-            className={
-              koleksi.find(k => k.id === item.id)
-                ? "fas fa-bookmark"
-                : "far fa-bookmark"
-            }
-            style={{
-              color: koleksi.find(k => k.id === item.id) ? "#ff914d" : "#888",
-              fontSize: 22
-            }}
-          ></i>
-        </button>
-      )}
-    </div>
-  </div>
-))}
-              </div>
-            </div>
-          </section>
+              {/* Bagian Menu Terbaru dihapus sesuai permintaan */}
 
               {/* Grid Makanan Berat */}
               <section className="section">

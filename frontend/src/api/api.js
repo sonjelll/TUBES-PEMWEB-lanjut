@@ -32,7 +32,8 @@ export const getPopularRecipesApi = async () => {
 };
 
 export const getRecipesByCategoryApi = async (category) => {
-    const response = await fetch(`${API_BASE_URL}/recipes/category/${category}`);
+    const encodedCategory = encodeURIComponent(category);
+    const response = await fetch(`${API_BASE_URL}/recipes/category/${encodedCategory}`);
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
