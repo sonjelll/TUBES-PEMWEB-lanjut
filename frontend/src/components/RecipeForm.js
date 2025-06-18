@@ -118,6 +118,8 @@ export default function RecipeForm({ onAdd, initialData }) {
               <option value="Sarapan">Sarapan</option>
               <option value="Makanan Sehat">Makanan Sehat</option>
               <option value="Masakan Tradisional Indonesia">Masakan Tradisional Indonesia</option>
+              <option value="Minuman">Minuman</option>
+              <option value="Kue">Kue</option>
             </select>
           </div>
         </div>
