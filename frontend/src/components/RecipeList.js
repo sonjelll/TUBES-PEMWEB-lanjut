@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { getFavoritesApi, addFavoriteApi, removeFavoriteApi } from "../api/api";
 
 // Simulasi API
 const dummyRecipes = [
@@ -8,19 +9,49 @@ const dummyRecipes = [
   { id: 3, title: "Sate Padang" },
 ];
 
-export default function RecipeList({ koleksi, setKoleksi, user }) {
+export default function RecipeList({ user }) {
   const [recipes, setRecipes] = useState([]);
+  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
     // Ganti dengan fetch/getRecipes() jika ada API
     setRecipes(dummyRecipes);
-  }, []);
 
-  function handleBookmark(recipe) {
-    if (!koleksi.find(r => r.id === recipe.id)) {
-      setKoleksi([...koleksi, recipe]);
+    if (user) {
+      fetchFavorites();
     }
-  }
+  }, [user]);
+
+  const fetchFavorites = async () => {
+    try {
+      const favs = await getFavoritesApi();
+      setFavorites(favs);
+    } catch (error) {
+      console.error("Failed to fetch favorites:", error);
+    }
+  };
+
+  const handleBookmark = async (recipe) => {
+    if (!favorites.find(fav => fav.id === recipe.id)) {
+      try {
+        await addFavoriteApi(recipe.id);
+        setFavorites([...favorites, recipe]);
+      } catch (error) {
+        console.error("Failed to add favorite:", error);
+      }
+    } else {
+      try {
+        await removeFavoriteApi(recipe.id);
+        setFavorites(favorites.filter(fav => fav.id !== recipe.id));
+      } catch (error) {
+        console.error("Failed to remove favorite:", error);
+      }
+    }
+  };
+
+  const isFavorite = (recipeId) => {
+    return favorites.some(fav => fav.id === recipeId);
+  };
 
   return (
     <div>
@@ -49,16 +80,16 @@ export default function RecipeList({ koleksi, setKoleksi, user }) {
                   cursor: "pointer",
                   padding: 0
                 }}
-                title="Simpan ke Koleksi"
+                title={isFavorite(r.id) ? "Hapus dari Koleksi" : "Simpan ke Koleksi"}
               >
                 <i
                   className={
-                    koleksi.find(k => k.id === r.id)
+                    isFavorite(r.id)
                       ? "fas fa-bookmark"
                       : "far fa-bookmark"
                   }
                   style={{
-                    color: koleksi.find(k => k.id === r.id) ? "#ff914d" : "#888",
+                    color: isFavorite(r.id) ? "#ff914d" : "#888",
                     fontSize: 22
                   }}
                 ></i>

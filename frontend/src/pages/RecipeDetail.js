@@ -1,52 +1,102 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { getRecipeByIdApi } from "../api/api";
+import React, { useEffect, useState, useContext } from 'react';
+import { useParams } from 'react-router-dom';
+import { getRecipeByIdApi, addFavoriteApi, removeFavoriteApi, getFavoritesApi } from '../api/api';
+import { AuthContext } from '../context/AuthContext';
 
-const RecipeDetail = () => {
+export default function RecipeDetail() {
   const { id } = useParams();
+  const { user } = useContext(AuthContext);
   const [recipe, setRecipe] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
         const data = await getRecipeByIdApi(id);
         setRecipe(data);
-      } catch (err) {
-        setError("Gagal mengambil data resep.");
-      } finally {
-        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching recipe:', error);
       }
     };
-    fetchRecipe();
-  }, [id]);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
-  if (!recipe) return <p>Resep tidak ditemukan.</p>;
+    const fetchFavorites = async () => {
+      if (user) {
+        try {
+          const favs = await getFavoritesApi();
+          setFavorites(favs);
+        } catch (error) {
+          console.error('Error fetching favorites:', error);
+        }
+      }
+    };
+
+    fetchRecipe();
+    fetchFavorites();
+  }, [id, user]);
+
+  function isFavorite(recipeId) {
+    return favorites.some(fav => fav.id === recipeId);
+  }
+
+  async function toggleFavorite() {
+    if (!user) {
+      alert('Silakan login untuk menandai favorit.');
+      return;
+    }
+    try {
+      if (isFavorite(recipe.id)) {
+        await removeFavoriteApi(recipe.id);
+        setFavorites(favorites.filter(fav => fav.id !== recipe.id));
+      } else {
+        await addFavoriteApi(recipe.id);
+        setFavorites([...favorites, recipe]);
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
+  }
+
+  if (!recipe) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div className="recipe-detail" style={{ maxWidth: 800, margin: "20px auto", padding: 20, boxShadow: "0 4px 8px rgba(0,0,0,0.1)", borderRadius: 12, backgroundColor: "#fff", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
+    <div style={{ padding: 20, maxWidth: 800, margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
+      <h1 style={{ marginBottom: 10 }}>{recipe.title}</h1>
       {recipe.image_url && (
-        <img 
-          src={recipe.image_url} 
-          alt={recipe.title} 
-          style={{ width: "100%", height: "auto", borderRadius: 12, marginBottom: 20, objectFit: "cover", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }} 
+        <img
+          src={recipe.image_url}
+          alt={recipe.title}
+          style={{ maxWidth: '100%', borderRadius: 8, marginBottom: 20 }}
         />
       )}
-      <p style={{ fontStyle: "italic", color: "#666", marginBottom: 10, fontSize: 14 }}>Oleh: {recipe.user_id}</p>
-      <h1 style={{ fontSize: "2.8rem", fontWeight: "bold", marginBottom: 25, color: "#ff914d", textShadow: "1px 1px 2px rgba(0,0,0,0.1)" }}>{recipe.title}</h1>
-      <section style={{ marginBottom: 30 }}>
-        <h2 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: 15, borderBottom: "3px solid #ff914d", paddingBottom: 8, color: "#333" }}>Alat dan Bahan</h2>
-        <p style={{ whiteSpace: "pre-line", lineHeight: 1.8, fontSize: 16, color: "#444" }}>{recipe.ingredients}</p>
-      </section>
-      <section>
-        <h2 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: 15, borderBottom: "3px solid #ff914d", paddingBottom: 8, color: "#333" }}>Cara Membuat</h2>
-        <p style={{ whiteSpace: "pre-line", lineHeight: 1.8, fontSize: 16, color: "#444" }}>{recipe.description}</p>
-      </section>
+      <div style={{ marginBottom: 15 }}>
+        <strong>Kategori:</strong> {recipe.category || '-'}
+      </div>
+      <div style={{ marginBottom: 15 }}>
+        <strong>Alat dan Bahan:</strong>
+        <p style={{ whiteSpace: 'pre-wrap', marginTop: 5 }}>{recipe.ingredients || '-'}</p>
+      </div>
+      <div style={{ marginBottom: 15 }}>
+        <strong>Cara Membuat:</strong>
+        <p style={{ whiteSpace: 'pre-wrap', marginTop: 5 }}>{recipe.description || '-'}</p>
+      </div>
+      {user && (
+        <button
+          onClick={toggleFavorite}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: isFavorite(recipe.id) ? '#ff914d' : '#888',
+            fontSize: 24,
+          }}
+          title={isFavorite(recipe.id) ? 'Hapus dari favorit' : 'Tambah ke favorit'}
+        >
+          <i className={isFavorite(recipe.id) ? 'fas fa-bookmark' : 'far fa-bookmark'}></i>
+        </button>
+      )}
     </div>
   );
-};
-
-export default RecipeDetail;
+}
+ 

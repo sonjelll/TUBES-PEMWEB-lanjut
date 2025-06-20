@@ -22,6 +22,10 @@ const authMiddleware = async (req, res, next) => {
         // if (!user) {
         //     return res.status(401).json({ message: 'User tidak ditemukan.' });
         // }
+        // Pastikan id adalah string ObjectId
+        if (decoded && decoded.id) {
+            decoded.id = decoded.id.toString();
+        }
         req.user = decoded; // Add decoded user payload to request object
         next();
     } catch (error) {

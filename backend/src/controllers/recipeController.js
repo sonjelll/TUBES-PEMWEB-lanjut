@@ -1,5 +1,5 @@
 // backend/src/controllers/recipeController.js
-const db = require('../db'); // Hanya satu kali deklarasi ini
+const Recipe = require('../models/recipeModel');
 const path = require('path');
 const fs = require('fs');
 
@@ -10,7 +10,6 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Fungsi untuk menambah resep baru
 exports.addRecipe = async (req, res) => {
-    // namaPembuat dari req.body tidak lagi digunakan jika kita mengambil dari token
     const { judulResep, alatBahan, caraMembuat, kategori } = req.body;
     let imageUrl = null;
 
@@ -18,33 +17,33 @@ exports.addRecipe = async (req, res) => {
         imageUrl = `${process.env.APP_URL || `http://localhost:${process.env.PORT}`}/uploads/${req.file.filename}`;
     }
 
-    // Pastikan req.user ada dari authMiddleware
     if (!req.user || !req.user.id) {
         return res.status(401).json({ message: 'Akses ditolak. User tidak terautentikasi.' });
     }
     const userId = req.user.id;
-    const namaPembuat = req.user.nama; // Ambil nama pembuat dari token
-
-    const query = `
-        INSERT INTO recipes (user_id, title, ingredients, description, category, image_url)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    const values = [userId, judulResep, alatBahan, caraMembuat, kategori, imageUrl];
+    const namaPembuat = req.user.nama;
 
     try {
-        const [result] = await db.execute(query, values);
+        const recipe = await Recipe.create({
+            user_id: userId,
+            title: judulResep,
+            ingredients: alatBahan,
+            description: caraMembuat,
+            category: kategori,
+            image_url: imageUrl,
+        });
         res.status(201).json({
             message: 'Resep berhasil ditambahkan!',
             recipe: {
-                id: result.insertId,
+                id: recipe.id,
                 user_id: userId,
-                namaPembuat: namaPembuat, // Gunakan namaPembuat dari token
+                namaPembuat: namaPembuat,
                 judulResep,
                 alatBahan,
                 caraMembuat,
                 kategori,
-                image_url: imageUrl
-            }
+                image_url: imageUrl,
+            },
         });
     } catch (error) {
         console.error('Error adding recipe:', error);
@@ -60,8 +59,8 @@ exports.addRecipe = async (req, res) => {
 // Fungsi untuk mendapatkan semua resep
 exports.getAllRecipes = async (req, res) => {
     try {
-        const [rows] = await db.execute(`SELECT id, user_id, title, ingredients, description, category, image_url, created_at FROM recipes`);
-        res.status(200).json(rows);
+        const recipes = await Recipe.findAll();
+        res.status(200).json(recipes);
     } catch (error) {
         console.error('Error fetching recipes:', error);
         res.status(500).json({ message: 'Gagal mengambil resep.', error: error.message });
@@ -70,16 +69,14 @@ exports.getAllRecipes = async (req, res) => {
 
 // Fungsi untuk mendapatkan resep user tertentu (Resep Saya)
 exports.getUserRecipes = async (req, res) => {
-    // userId diambil dari token JWT (req.user.id) yang sudah di-set oleh authMiddleware
     if (!req.user || !req.user.id) {
         return res.status(401).json({ message: 'Akses ditolak. User tidak terautentikasi.' });
     }
     const userId = req.user.id;
 
     try {
-        // Query resep berdasarkan user_id dari pengguna yang terautentikasi
-        const [rows] = await db.execute(`SELECT id, user_id, title, ingredients, description, category, image_url, created_at FROM recipes WHERE user_id = ?`, [userId]);
-        res.status(200).json(rows);
+        const recipes = await Recipe.findAll({ where: { user_id: userId } });
+        res.status(200).json(recipes);
     } catch (error) {
         console.error('Error fetching user recipes:', error);
         res.status(500).json({ message: 'Gagal mengambil resep.', error: error.message });
@@ -89,8 +86,8 @@ exports.getUserRecipes = async (req, res) => {
 // Fungsi untuk mendapatkan resep populer
 exports.getPopularRecipes = async (req, res) => {
     try {
-        const [rows] = await db.execute(`SELECT id, user_id, title, ingredients, description, category, image_url, created_at FROM recipes ORDER BY id DESC LIMIT 8`);
-        res.status(200).json(rows);
+        const recipes = await Recipe.findAll({ order: [['id', 'DESC']], limit: 8 });
+        res.status(200).json(recipes);
     } catch (error) {
         console.error('Error fetching popular recipes:', error);
         res.status(500).json({ message: 'Gagal mengambil resep populer.', error: error.message });
@@ -101,8 +98,8 @@ exports.getPopularRecipes = async (req, res) => {
 exports.getRecipesByCategory = async (req, res) => {
     const { categoryName } = req.params;
     try {
-        const [rows] = await db.execute(`SELECT id, user_id, title, ingredients, description, category, image_url, created_at FROM recipes WHERE category = ?`, [categoryName]);
-        res.status(200).json(rows);
+        const recipes = await Recipe.findAll({ where: { category: categoryName } });
+        res.status(200).json(recipes);
     } catch (error) {
         console.error(`Error fetching ${categoryName} recipes:`, error);
         res.status(500).json({ message: `Gagal mengambil resep ${categoryName}.`, error: error.message });
@@ -113,11 +110,11 @@ exports.getRecipesByCategory = async (req, res) => {
 exports.getRecipeById = async (req, res) => {
     const { id } = req.params;
     try {
-        const [rows] = await db.execute(`SELECT id, user_id, title, ingredients, description, category, image_url FROM recipes WHERE id = ?`, [id]);
-        if (rows.length === 0) {
+        const recipe = await Recipe.findByPk(id);
+        if (!recipe) {
             return res.status(404).json({ message: 'Resep tidak ditemukan.' });
         }
-        res.status(200).json(rows[0]); // Kirim objek resep pertama
+        res.status(200).json(recipe);
     } catch (error) {
         console.error('Error fetching recipe by ID:', error);
         res.status(500).json({ message: 'Gagal mengambil resep.', error: error.message });

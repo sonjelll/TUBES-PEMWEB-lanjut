@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+  import { useEffect, useState } from "react";
 import "./App.css";
 import "bulma/css/bulma.min.css";
 import Navbar from "./components/Navbar";
@@ -13,14 +13,29 @@ import RecipeEdit from "./pages/RecipeEdit";
 import RecipeDetail from "./pages/RecipeDetail";
 import Premium from "./pages/Premium"; // IMPORT KOMPONEN PREMIUM BARU
 
+// Import AuthContext
+import { useContext } from "react";
+import { AuthContext, AuthProvider } from "./context/AuthContext";
+
 // Import fungsi API
 import { 
   // getAllRecipesApi, 
   // getPopularRecipesApi, 
-  getRecipesByCategoryApi 
+  getRecipesByCategoryApi,
+  getFavoritesApi,
+  addFavoriteApi,
+  removeFavoriteApi
 } from "./api/api"; 
 
 function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
   // recipes tidak digunakan di komponen ini, jadi kita bisa hapus state ini untuk menghilangkan warning
   // const [recipes, setRecipes] = useState([]); 
   // const [popularRecipes, setPopularRecipes] = useState([]);
@@ -33,8 +48,11 @@ function App() {
   const [kueRecipes, setKueRecipes] = useState([]);
 
   const [search, setSearch] = useState("");
-  const [user, setUser] = useState(null); // State user untuk status login
+  // Remove local user state and use AuthContext instead
+  // const [user, setUser] = useState(null); // State user untuk status login
+  const { user, setUser } = useContext(AuthContext);
   const [koleksi, setKoleksi] = useState([]); // Pastikan koleksi bekerja dengan ID dari DB
+  const [favorites, setFavorites] = useState([]);
   const navigate = useNavigate();
 
   // EFFECT UNTUK MEMBACA STATUS LOGIN DARI LOCALSTORAGE SAAT APLIKASI DIMUAT
@@ -50,7 +68,29 @@ function App() {
     }
   }, []);
 
-  // EFFECT UNTUK FETCH DATA RESEP DARI BACKEND
+  function isFavorite(recipeId) {
+    return favorites.some(fav => fav.id === recipeId);
+  }
+
+  async function toggleFavorite(recipe) {
+    if (!user) {
+      alert("Silakan login untuk menandai favorit.");
+      return;
+    }
+    try {
+      if (isFavorite(recipe.id)) {
+        await removeFavoriteApi(recipe.id);
+        setFavorites(favorites.filter(fav => fav.id !== recipe.id));
+      } else {
+        await addFavoriteApi(recipe.id);
+        setFavorites([...favorites, recipe]);
+      }
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
+  }
+
+  // EFFECT UNTUK FETCH DATA RESEP DARI BACKEND DAN FAVORITES
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -76,14 +116,19 @@ function App() {
         const kue = await getRecipesByCategoryApi("Kue");
         setKueRecipes(kue);
 
+        if (user) {
+          const favs = await getFavoritesApi();
+          setFavorites(favs);
+        }
+
       } catch (err) {
-        console.error("Error fetching recipes:", err);
+        console.error("Error fetching recipes or favorites:", err);
         // Pertimbangkan untuk menampilkan pesan error di UI jika fetch gagal
       }
     };
 
     fetchData();
-  }, []); // [] agar hanya dijalankan sekali saat komponen pertama kali di-mount
+  }, [setUser, user]); // Add user to dependency array to refetch favorites on login
 
   // FILTER RESEP BERDASARKAN INPUT PENCARIAN
   // filteredRecipes akan digunakan di bagian "Pencarian populer" saat ada input search
@@ -241,7 +286,7 @@ function App() {
       {user && (
         <Route path="/dashboard" element={<DashboardUser user={user} />} />
       )}
-
+      
       {/* Route untuk daftar resep umum (jika ada halaman terpisah) */}
       <Route
         path="/recipes"
@@ -253,19 +298,19 @@ function App() {
           />
         }
       />
-      
+      <Route
+        path="/recipe-detail/:id"
+        element={<RecipeDetail user={user} />}
+      />
       {/* Route untuk Tambah Resep */}
-      <Route path="/tambah-resep" element={<RecipeAdd onRefresh={fetchData} />} /> 
-      
+      <Route path="/tambah-resep" element={<RecipeAdd onRefresh={fetchData} />} />
       {/* Route untuk Resep Saya */}
       <Route path="/resep-saya" element={<RecipeMine />} />
-
       {/* Route untuk Edit Resep */}
       <Route path="/edit-resep/:id" element={<RecipeEdit />} />
-
       {/* Route untuk Detail Resep */}
       <Route path="/recipe-detail/:id" element={<RecipeDetail />} />
-
+      
       {/* ROUTE UNTUK HALAMAN PREMIUM */}
       <Route 
         path="/premium" 
@@ -281,276 +326,414 @@ function App() {
           />
         } 
       />
-
+      
       {/* Route Wildcard (*) - Ini adalah HOME PAGE atau FALLBACK */}
       <Route
         path="*" // Matches any path not matched above
         element={
-          <div style={{ display: "flex", minHeight: "100vh" }}>
-            <Sidebar />
-            <div style={{ marginLeft: 220, flex: 1 }}>
-              <Navbar
-                onLoginClick={() => navigate("/login")}
-                user={user} // Pass user state to Navbar
-                onLogout={() => {
-                  setUser(null);
-                  localStorage.removeItem("token");
-                  localStorage.removeItem("user"); // Hapus juga info user dari localStorage
-                  navigate("/"); // Arahkan ke homepage setelah logout
-                }}
-              />
-
-              {/* HERO SECTION */}
-              <section
-                className="hero is-medium"
-                style={{
-                  background: "linear-gradient(120deg, #fffbe6 0%, #fff 100%)",
-                  backgroundImage:
-                    "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1500&q=80')",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  position: "relative",
-                  minHeight: "60vh",
-                }}
-              >
-                <div
-                  className="hero-body"
+          <>
+            <div style={{ display: "flex", minHeight: "100vh" }}>
+              <Sidebar />
+              <div style={{ marginLeft: 220, flex: 1 }}>
+                <Navbar
+                  onLoginClick={() => navigate("/login")}
+                  user={user} // Pass user state to Navbar
+                  onLogout={() => {
+                    setUser(null);
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user"); // Hapus juga info user dari localStorage
+                    navigate("/"); // Arahkan ke homepage setelah logout
+                  }}
+                />
+                
+                {/* HERO SECTION */}
+                <section
+                  className="hero is-medium"
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "rgba(255,255,255,0.85)",
-                    borderRadius: "16px",
-                    margin: "32px",
+                    background: "linear-gradient(120deg, #fffbe6 0%, #fff 100%)",
+                    backgroundImage:
+                      "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1500&q=80')",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    position: "relative",
+                    minHeight: "60vh",
                   }}
                 >
-                  <h1
-                    className="title is-1"
+                  <div
+                    className="hero-body"
                     style={{
-                      color: "#ff914d",
-                      fontFamily: "'DM Serif Display', serif",
-                      fontWeight: 700,
-                      letterSpacing: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "rgba(255,255,255,0.85)",
+                      borderRadius: "16px",
+                      margin: "32px",
                     }}
                   >
-                    Cook.io
-                  </h1>
-                  <h2
-                    className="subtitle is-3"
-                    style={{
-                      color: "#222",
-                      fontWeight: 400,
-                      marginBottom: 24,
-                    }}
-                  >
-                    Temukan & Bagikan Resep Masakan Rumahan Favoritmu!
-                  </h2>
-                  <form
-                    className="field has-addons"
-                    style={{ maxWidth: 500, width: "100%", margin: "0 auto" }}
-                    onSubmit={e => e.preventDefault()}
-                  >
-                    <div className="control is-expanded">
-                      <input
-                        className="input is-large"
-                        type="text"
-                        placeholder="Cari resep (misal: ayam, mie, dessert...)"
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        style={{ borderRadius: "24px 0 0 24px" }}
-                      />
+                    <h1
+                      className="title is-1"
+                      style={{
+                        color: "#ff914d",
+                        fontFamily: "'DM Serif Display', serif",
+                        fontWeight: 700,
+                        letterSpacing: 1,
+                      }}
+                    >
+                      Cook.io
+                    </h1>
+                    <h2
+                      className="subtitle is-3"
+                      style={{
+                        color: "#222",
+                        fontWeight: 400,
+                        marginBottom: 24,
+                      }}
+                    >
+                      Temukan & Bagikan Resep Masakan Rumahan Favoritmu!
+                    </h2>
+                    <form
+                      className="field has-addons"
+                      style={{ maxWidth: 500, width: "100%", margin: "0 auto" }}
+                      onSubmit={e => e.preventDefault()}
+                    >
+                      <div className="control is-expanded">
+                        <input
+                          className="input is-large"
+                          type="text"
+                          placeholder="Cari resep (misal: ayam, mie, dessert...)"
+                          value={search}
+                          onChange={e => setSearch(e.target.value)}
+                          style={{ borderRadius: "24px 0 0 24px" }}
+                        />
+                      </div>
+                      <div className="control">
+                        <button className="button is-warning is-large" style={{ borderRadius: "0 24px 24px 0" }}>
+                          🔍
+                        </button>
+                      </div>
+                    </form>
+                    <p className="mt-5" style={{ color: "#444", fontSize: 18 }}>
+                      Jelajahi ribuan resep rumahan, simpan favoritmu, dan bagikan kreasi masakanmu bersama komunitas.
+                    </p>
+                  </div>
+                </section>
+                
+                {/* Bagian Menu Terbaru dihapus sesuai permintaan */}
+                
+                {/* Grid Makanan Berat */}
+                <section className="section">
+                  <div className="container">
+                    <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                      Makanan Berat
+                    </h2>
+                    <div className="columns is-multiline">
+                      {makananBeratRecipes.map((item, i) => (
+                        <div className="column is-3" key={item.id || i}>
+                          <div className="populer-card" style={{ position: "relative" }}>
+                            <img
+                              src={item.image_url}
+                              alt={item.title}
+                              className="populer-img"
+                            />
+                            <button
+                              style={{
+                                position: "absolute",
+                                top: 8,
+                                right: 8,
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 0,
+                                color: "#888",
+                                fontSize: 24,
+                                zIndex: 10,
+                              }}
+                              title="Bookmark"
+                            >
+                              <i className="far fa-bookmark"></i>
+                            </button>
+                <div className="populer-title">
+                  <Link to={`/recipe-detail/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                    {item.title}
+                  </Link>
+                </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="control">
-                      <button className="button is-warning is-large" style={{ borderRadius: "0 24px 24px 0" }}>
-                        🔍
-                      </button>
+                  </div>
+                </section>
+                {/* Grid Cemilan / Snack */}
+                <section className="section">
+                  <div className="container">
+                    <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                      Cemilan / Snack
+                    </h2>
+                    <div className="columns is-multiline">
+                      {cemilanRecipes.map((item, i) => (
+                        <div className="column is-3" key={item.id || i}>
+                          <div className="populer-card" style={{ position: "relative" }}>
+                            <img
+                              src={item.image_url}
+                              alt={item.title}
+                              className="populer-img"
+                            />
+                            <button
+                              style={{
+                                position: "absolute",
+                                top: 8,
+                                right: 8,
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 0,
+                                color: "#888",
+                                fontSize: 24,
+                                zIndex: 10,
+                              }}
+                              title="Bookmark"
+                            >
+                              <i className="far fa-bookmark"></i>
+                            </button>
+                <div className="populer-title">
+                  <Link to={`/recipe-detail/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                    {item.title}
+                  </Link>
+                </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </form>
-                  <p className="mt-5" style={{ color: "#444", fontSize: 18 }}>
-                    Jelajahi ribuan resep rumahan, simpan favoritmu, dan bagikan kreasi masakanmu bersama komunitas.
-                  </p>
+                  </div>
+                </section>
+                {/* Grid Sarapan */}
+                <section className="section">
+                  <div className="container">
+                    <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                      Sarapan
+                    </h2>
+                    <div className="columns is-multiline">
+                      {sarapanRecipes.map((item, i) => (
+                        <div className="column is-3" key={item.id || i}>
+                          <div className="populer-card" style={{ position: "relative" }}>
+                            <img
+                              src={item.image_url}
+                              alt={item.title}
+                              className="populer-img"
+                            />
+                            <button
+                              style={{
+                                position: "absolute",
+                                top: 8,
+                                right: 8,
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 0,
+                                color: "#888",
+                                fontSize: 24,
+                                zIndex: 10,
+                              }}
+                              title="Bookmark"
+                            >
+                              <i className="far fa-bookmark"></i>
+                            </button>
+                <div className="populer-title">
+                  <Link to={`/recipe-detail/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                    {item.title}
+                  </Link>
                 </div>
-              </section>
-
-              {/* Bagian Menu Terbaru dihapus sesuai permintaan */}
-
-              {/* Grid Makanan Berat */}
-              <section className="section">
-                <div className="container">
-                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-                    Makanan Berat
-                  </h2>
-                  <div className="columns is-multiline">
-                    {makananBeratRecipes.map((item, i) => (
-                      <div className="column is-3" key={item.id || i}>
-                        <div className="populer-card">
-                          <img
-                            src={item.image_url}
-                            alt={item.title}
-                            className="populer-img"
-                          />
-                          <div className="populer-title">
-                            {item.title}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+                </section>
+                {/* Grid Makanan Sehat */}
+                <section className="section">
+                  <div className="container">
+                    <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                      Makanan Sehat
+                    </h2>
+                    <div className="columns is-multiline">
+                      {makananSehatRecipes.map((item, i) => (
+                        <div className="column is-3" key={item.id || i}>
+                          <div className="populer-card" style={{ position: "relative" }}>
+                            <img
+                              src={item.image_url}
+                              alt={item.title}
+                              className="populer-img"
+                            />
+                            <button
+                              style={{
+                                position: "absolute",
+                                top: 8,
+                                right: 8,
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 0,
+                                color: "#888",
+                                fontSize: 24,
+                                zIndex: 10,
+                              }}
+                              title="Bookmark"
+                            >
+                              <i className="far fa-bookmark"></i>
+                            </button>
+                <div className="populer-title">
+                  <Link to={`/recipe-detail/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                    {item.title}
+                  </Link>
                 </div>
-              </section>
-
-              {/* Grid Cemilan / Snack */}
-              <section className="section">
-                <div className="container">
-                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-                    Cemilan / Snack
-                  </h2>
-                  <div className="columns is-multiline">
-                    {cemilanRecipes.map((item, i) => (
-                      <div className="column is-3" key={item.id || i}>
-                        <div className="populer-card">
-                          <img
-                            src={item.image_url}
-                            alt={item.title}
-                            className="populer-img"
-                          />
-                          <div className="populer-title">
-                            {item.title}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+                </section>
+                {/* Grid Masakan Tradisional Indonesia */}
+                <section className="section">
+                  <div className="container">
+                    <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                      Masakan Tradisional Indonesia
+                    </h2>
+                    <div className="columns is-multiline">
+                      {masakanTradisionalRecipes.map((item, i) => (
+                        <div className="column is-3" key={item.id || i}>
+                          <div className="populer-card" style={{ position: "relative" }}>
+                            <img
+                              src={item.image_url}
+                              alt={item.title}
+                              className="populer-img"
+                            />
+                            {user && (
+                              <button
+                                onClick={() => toggleFavorite(item)}
+                                style={{
+                                  position: "absolute",
+                                  top: 8,
+                                  right: 8,
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  padding: 0,
+                                  color: isFavorite(item.id) ? "#ff914d" : "#888",
+                                  fontSize: 24,
+                                  zIndex: 10,
+                                }}
+                                title={isFavorite(item.id) ? "Hapus dari favorit" : "Tambah ke favorit"}
+                              >
+                                <i className={isFavorite(item.id) ? "fas fa-bookmark" : "far fa-bookmark"}></i>
+                              </button>
+                            )}
+                <div className="populer-title">
+                  <Link to={`/recipe-detail/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                    {item.title}
+                  </Link>
                 </div>
-              </section>
-
-              {/* Grid Sarapan */}
-              <section className="section">
-                <div className="container">
-                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-                    Sarapan
-                  </h2>
-                  <div className="columns is-multiline">
-                    {sarapanRecipes.map((item, i) => (
-                      <div className="column is-3" key={item.id || i}>
-                        <div className="populer-card">
-                          <img
-                            src={item.image_url}
-                            alt={item.title}
-                            className="populer-img"
-                          />
-                          <div className="populer-title">
-                            {item.title}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+                </section>
+                {/* Grid Minuman */}
+                <section className="section">
+                  <div className="container">
+                    <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                      Minuman 
+                    </h2>
+                    <div className="columns is-multiline">
+                      {minumanRecipes.map((item, i) => (
+                        <div className="column is-3" key={item.id || i}>
+                          <div className="populer-card" style={{ position: "relative" }}>
+                            <img
+                              src={item.image_url}
+                              alt={item.title}
+                              className="populer-img"
+                            />
+                            {user && (
+                              <button
+                                onClick={() => toggleFavorite(item)}
+                                style={{
+                                  position: "absolute",
+                                  top: 8,
+                                  right: 8,
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  padding: 0,
+                                  color: isFavorite(item.id) ? "#ff914d" : "#888",
+                                  fontSize: 24,
+                                  zIndex: 10,
+                                }}
+                                title={isFavorite(item.id) ? "Hapus dari favorit" : "Tambah ke favorit"}
+                              >
+                                <i className={isFavorite(item.id) ? "fas fa-bookmark" : "far fa-bookmark"}></i>
+                              </button>
+                            )}
+                <div className="populer-title">
+                  <Link to={`/recipe-detail/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                    {item.title}
+                  </Link>
                 </div>
-              </section>
-
-              {/* Grid Makanan Sehat */}
-              <section className="section">
-                <div className="container">
-                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-                    Makanan Sehat
-                  </h2>
-                  <div className="columns is-multiline">
-                    {makananSehatRecipes.map((item, i) => (
-                      <div className="column is-3" key={item.id || i}>
-                        <div className="populer-card">
-                          <img
-                            src={item.image_url}
-                            alt={item.title}
-                            className="populer-img"
-                          />
-                          <div className="populer-title">
-                            {item.title}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </section>
-
-              {/* Grid Masakan Tradisional Indonesia */}
-              <section className="section">
-                <div className="container">
-                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-                    Masakan Tradisional Indonesia
-                  </h2>
-                  <div className="columns is-multiline">
-                    {masakanTradisionalRecipes.map((item, i) => (
+                </section>
+                {/* Grid Kue */}
+                <section className="section">
+                  <div className="container">
+                    <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
+                      Kue
+                    </h2>
+                    <div className="columns is-multiline">
+                      {kueRecipes.map((item, i) => (
                       <div className="column is-3" key={item.id || i}>
-                        <div className="populer-card">
-                          <img
-                            src={item.image_url}
-                            alt={item.title}
-                            className="populer-img"
-                          />
-                          <div className="populer-title">
-                            {item.title}
+                        <Link to={`/recipe-detail/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                          <div className="populer-card" style={{ position: "relative" }}>
+                            <img
+                              src={item.image_url}
+                              alt={item.title}
+                              className="populer-img"
+                            />
+                            {user && (
+                              <button
+                                onClick={(e) => { e.preventDefault(); toggleFavorite(item); }}
+                                style={{
+                                  position: "absolute",
+                                  top: 8,
+                                  right: 8,
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  padding: 0,
+                                  color: isFavorite(item.id) ? "#ff914d" : "#888",
+                                  fontSize: 24,
+                                  zIndex: 10,
+                                }}
+                                title={isFavorite(item.id) ? "Hapus dari favorit" : "Tambah ke favorit"}
+                              >
+                                <i className={isFavorite(item.id) ? "fas fa-bookmark" : "far fa-bookmark"}></i>
+                              </button>
+                            )}
+                            <div className="populer-title">
+                              {item.title}
+                            </div>
                           </div>
-                        </div>
+                        </Link>
                       </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </section>
-
-              {/* Grid Minuman */}
-              <section className="section">
-                <div className="container">
-                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-                    Minuman 
-                  </h2>
-                  <div className="columns is-multiline">
-                    {minumanRecipes.map((item, i) => (
-                      <div className="column is-3" key={item.id || i}>
-                        <div className="populer-card">
-                          <img
-                            src={item.image_url}
-                            alt={item.title}
-                            className="populer-img"
-                          />
-                          <div className="populer-title">
-                            {item.title}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </section>
-
-              {/* Grid Kue */}
-              <section className="section">
-                <div className="container">
-                  <h2 className="title is-4" style={{ color: "#444", marginBottom: 24 }}>
-                    Kue
-                  </h2>
-                  <div className="columns is-multiline">
-                    {kueRecipes.map((item, i) => (
-                      <div className="column is-3" key={item.id || i}>
-                        <div className="populer-card">
-                          <img
-                            src={item.image_url}
-                            alt={item.title}
-                            className="populer-img"
-                          />
-                          <div className="populer-title">
-                            {item.title}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </section>
+                </section>
+              </div>
             </div>
-          </div>
+          </>
         }
       />
     </Routes>

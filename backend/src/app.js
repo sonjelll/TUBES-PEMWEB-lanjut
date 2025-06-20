@@ -5,6 +5,7 @@ const path = require('path'); // Tambahkan ini
 const db = require('./db'); // Pastikan koneksi DB terinisialisasi
 
 const recipeRoutes = require('./routes/recipeRoutes');
+const favoriteRoutes = require('./routes/favoriteRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,6 +20,7 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads'))); // K
 
 // Routes
 app.use('/api/recipes', recipeRoutes);
+app.use('/api/favorites', favoriteRoutes);
 // Aktifkan route auth agar login dan register bisa diakses
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);

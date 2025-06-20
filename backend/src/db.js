@@ -1,21 +1,20 @@
-// frontend/src/db.js
-const mysql = require('mysql2/promise'); // Pastikan ini ada
+const { Sequelize } = require('sequelize');
 
-const pool = mysql.createPool({ // Variabel 'pool' dideklarasikan dan diinisialisasi di sini
-    host: 'localhost', // Sesuai dengan config kamu
-    user: 'root',      // Sesuai dengan config kamu
-    password: 'oop',   // Sesuai dengan config kamu
-    database: 'food-recipe' // Sesuai dengan config kamu
+const sequelize = new Sequelize('food-recipe', 'root', 'oop', {
+  host: 'localhost',
+  dialect: 'mysql',
+  logging: false, // Disable logging; default: console.log
 });
 
-// Test connection (Opsional, tapi disarankan untuk debugging)
-pool.getConnection()
-    .then(connection => {
-        console.log('Database connected successfully!');
-        connection.release(); // Penting: Lepaskan koneksi kembali ke pool
-    })
-    .catch(err => {
-        console.error('Database connection failed:', err.message);
-    });
+async function testConnection() {
+  try {
+    await sequelize.authenticate();
+    console.log('Connection to the database has been established successfully.');
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
+}
 
-module.exports = pool; // Sekarang 'pool' sudah dideklarasikan sebelum diekspor
+testConnection();
+
+module.exports = sequelize;

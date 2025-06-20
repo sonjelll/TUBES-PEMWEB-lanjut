@@ -90,3 +90,47 @@ export const deleteRecipeApi = async (id) => {
     }
     return response.json();
 };
+
+// Favorite API functions
+export const getFavoritesApi = async () => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/favorites`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};
+
+export const addFavoriteApi = async (recipeId) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/favorites`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ recipeId })
+    });
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};
+
+export const removeFavoriteApi = async (recipeId) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/favorites/${recipeId}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};

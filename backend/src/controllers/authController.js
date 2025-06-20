@@ -5,20 +5,20 @@ const jwt = require('jsonwebtoken');
 exports.register = async (req, res) => {
   const { username, password, nama, email } = req.body;
   // Cek username sudah ada
-  const existing = await userModel.findByUsername(username);
+  const existing = await userModel.findOne({ where: { username } });
   if (existing) return res.status(400).json({ error: 'Username sudah terdaftar' });
   // Cek email sudah ada
-  const existingEmail = await userModel.findByEmail(email);
+  const existingEmail = await userModel.findOne({ where: { email } });
   if (existingEmail) return res.status(400).json({ error: 'Email sudah terdaftar' });
   const hash = await bcrypt.hash(password, 10);
-  const user = await userModel.createUser(username, hash, nama, email);
+  const user = await userModel.create({ username, password: hash, nama, email });
   res.json(user);
 };
 
 exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await userModel.findByUsername(username);
+    const user = await userModel.findOne({ where: { username } });
     if (!user) return res.status(400).json({ error: 'User tidak ditemukan' });
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ error: 'Password salah' });

@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const db = require('../../db'); // Mengimport koneksi db dari db.js
+const db = require('../db'); // Mengimport koneksi db dari db.js
 
 const Recipe = db.define('Recipe', {
     id: {
