@@ -436,23 +436,25 @@ function AppContent() {
                               alt={item.title}
                               className="populer-img"
                             />
-                            <button
-                              style={{
-                                position: "absolute",
-                                top: 8,
-                                right: 8,
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: 0,
-                                color: "#888",
-                                fontSize: 24,
-                                zIndex: 10,
-                              }}
-                              title="Bookmark"
-                            >
-                              <i className="far fa-bookmark"></i>
-                            </button>
+                            {user && (
+                              <button
+                                style={{
+                                  position: "absolute",
+                                  top: 8,
+                                  right: 8,
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  padding: 0,
+                                  color: "#888",
+                                  fontSize: 24,
+                                  zIndex: 10,
+                                }}
+                                title="Bookmark"
+                              >
+                                <i className="far fa-bookmark"></i>
+                              </button>
+                            )}
                 <div className="populer-title">
                   <Link to={`/recipe-detail/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
                     {item.title}
