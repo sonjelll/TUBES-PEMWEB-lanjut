@@ -35,8 +35,14 @@ router.get('/mine', authMiddleware, recipeController.getUserRecipes);
 // Route untuk mendapatkan detail resep berdasarkan ID (untuk Edit)
 router.get('/:id', recipeController.getRecipeById);
 
+// Middleware logging sederhana untuk route update resep
+const logUpdateRecipeRequest = (req, res, next) => {
+  console.log(`Request update resep diterima: user=${req.user ? req.user.id : 'unknown'}, recipeId=${req.params.id}`);
+  next();
+};
+
 // Route untuk mengupdate resep (butuh upload file dan autentikasi)
-router.put('/:id', authMiddleware, multer({ storage: multer.diskStorage({
+router.put('/:id', authMiddleware, logUpdateRecipeRequest, multer({ storage: multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads/');
   },

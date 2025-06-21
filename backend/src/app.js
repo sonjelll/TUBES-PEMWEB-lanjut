@@ -6,9 +6,15 @@ const db = require('./db'); // Pastikan koneksi DB terinisialisasi
 
 const recipeRoutes = require('./routes/recipeRoutes');
 const favoriteRoutes = require('./routes/favoriteRoutes');
+const Recipe = require('./models/recipeModel');
+const User = require('./models/userModel');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Definisikan relasi model di sini agar Sequelize mengenali asosiasi
+User.hasMany(Recipe, { foreignKey: 'user_id' });
+Recipe.belongsTo(User, { foreignKey: 'user_id' });
 
 // Middleware
 app.use(cors());

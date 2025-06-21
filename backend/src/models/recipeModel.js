@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const db = require('../db'); // Mengimport koneksi db dari db.js
+const User = require('./userModel');
 
 const Recipe = db.define('Recipe', {
     id: {
@@ -10,6 +11,10 @@ const Recipe = db.define('Recipe', {
     user_id: {
         type: DataTypes.INTEGER,
         allowNull: false // Sesuaikan jika user_id bisa null
+    },
+    nama_pembuat: {
+        type: DataTypes.STRING(255),
+        allowNull: true
     },
     title: {
         type: DataTypes.STRING(255),
@@ -41,8 +46,6 @@ const Recipe = db.define('Recipe', {
     underscored: true // Jika kolom di DB menggunakan underscore_case (misal: user_id)
 });
 
-// Jika ada tabel User, bisa definisikan relasi di sini
-// const User = require('./userModel'); // Misal import model User
-// Recipe.belongsTo(User, { foreignKey: 'user_id' });
+Recipe.belongsTo(User, { foreignKey: 'user_id' });
 
 module.exports = Recipe;

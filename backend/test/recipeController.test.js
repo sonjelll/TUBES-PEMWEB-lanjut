@@ -1,57 +1,56 @@
 const request = require('supertest');
-const app = require('../src/app'); // Pastikan app.js mengekspor app Express
+const app = require('../src/app'); // Pastikan app diekspor dari src/app.js
 
-describe('Recipe Controller', () => {
+describe('Recipe API', () => {
   let token;
-  let createdRecipeId;
+  let recipeId;
 
   beforeAll(async () => {
-    // Login atau buat token valid untuk testing
-    // Contoh login dan dapatkan token
+    // Login untuk mendapatkan token
     const res = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'testuser@example.com', password: 'password' });
+      .send({ username: 'testuser', password: 'testpassword' });
     token = res.body.token;
   });
 
-  test('should add a new recipe', async () => {
+  test('Tambah resep baru', async () => {
     const res = await request(app)
       .post('/api/recipes')
       .set('Authorization', `Bearer ${token}`)
-      .field('judulResep', 'Test Recipe')
-      .field('alatBahan', 'Test Ingredients')
-      .field('caraMembuat', 'Test Instructions')
+      .field('judulResep', 'Test Resep')
+      .field('alatBahan', 'Bahan 1, Bahan 2')
+      .field('caraMembuat', 'Langkah 1, Langkah 2')
       .field('kategori', 'Makanan Berat');
     expect(res.statusCode).toBe(201);
-    expect(res.body).toHaveProperty('recipe');
-    createdRecipeId = res.body.recipe.id;
+    expect(res.body.recipe).toHaveProperty('id');
+    recipeId = res.body.recipe.id;
   });
 
-  test('should get user recipes', async () => {
+  test('Ambil resep berdasarkan ID', async () => {
     const res = await request(app)
-      .get('/api/recipes/mine')
+      .get(`/api/recipes/${recipeId}`)
       .set('Authorization', `Bearer ${token}`);
     expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body).toHaveProperty('id', recipeId);
   });
 
-  test('should update a recipe', async () => {
+  test('Update resep', async () => {
     const res = await request(app)
-      .put(`/api/recipes/${createdRecipeId}`)
+      .put(`/api/recipes/${recipeId}`)
       .set('Authorization', `Bearer ${token}`)
-      .field('judulResep', 'Updated Recipe')
-      .field('alatBahan', 'Updated Ingredients')
-      .field('caraMembuat', 'Updated Instructions')
+      .field('judulResep', 'Test Resep Updated')
+      .field('alatBahan', 'Bahan 1 Updated')
+      .field('caraMembuat', 'Langkah 1 Updated')
       .field('kategori', 'Cemilan / Snack');
     expect(res.statusCode).toBe(200);
-    expect(res.body.message).toBe('Resep berhasil diperbarui!');
+    expect(res.body).toHaveProperty('message', 'Resep berhasil diperbarui!');
   });
 
-  test('should delete a recipe', async () => {
+  test('Hapus resep', async () => {
     const res = await request(app)
-      .delete(`/api/recipes/${createdRecipeId}`)
+      .delete(`/api/recipes/${recipeId}`)
       .set('Authorization', `Bearer ${token}`);
     expect(res.statusCode).toBe(200);
-    expect(res.body.message).toBe('Resep berhasil dihapus!');
+    expect(res.body).toHaveProperty('message', 'Resep berhasil dihapus!');
   });
 });

@@ -1,13 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function RecipeForm({ onAdd, initialData }) {
-  const [namaPembuat, setNamaPembuat] = useState(initialData?.namaPembuat || "");
-  const [judulResep, setJudulResep] = useState(initialData?.judulResep || "");
-  const [alatBahan, setAlatBahan] = useState(initialData?.alatBahan || "");
-  const [caraMembuat, setCaraMembuat] = useState(initialData?.caraMembuat || "");
-  const [kategori, setKategori] = useState(initialData?.kategori || ""); // Tambah state kategori
-  const [gambar, setGambar] = useState(null); // Ini akan menyimpan objek File
-  const [preview, setPreview] = useState(initialData?.image_url || null);
+  const [namaPembuat, setNamaPembuat] = useState("");
+  const [judulResep, setJudulResep] = useState("");
+  const [alatBahan, setAlatBahan] = useState("");
+  const [caraMembuat, setCaraMembuat] = useState("");
+  const [kategori, setKategori] = useState("");
+  const [gambar, setGambar] = useState(null);
+  const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+    if (initialData) {
+      setNamaPembuat(initialData.namaPembuat || "");
+      setJudulResep(initialData.judulResep || "");
+      setAlatBahan(initialData.alatBahan || "");
+      setCaraMembuat(initialData.caraMembuat || "");
+      setKategori(initialData.kategori || "");
+      setPreview(initialData.image_url || null);
+    }
+  }, [initialData]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -16,27 +27,24 @@ export default function RecipeForm({ onAdd, initialData }) {
       return;
     }
 
-    // Buat objek FormData untuk mengirim data form, termasuk file
     const formData = new FormData();
     formData.append("namaPembuat", namaPembuat);
     formData.append("judulResep", judulResep);
     formData.append("alatBahan", alatBahan);
     formData.append("caraMembuat", caraMembuat);
-    formData.append("kategori", kategori); // Tambah kategori ke FormData
-    
-    // Hanya tambahkan gambar jika ada
+    formData.append("kategori", kategori);
+
     if (gambar) {
-      formData.append("gambarResep", gambar); // Nama field ini penting, harus cocok dengan yang diharapkan backend
+      formData.append("gambarResep", gambar);
     }
 
-    onAdd(formData); // Kirim FormData ke parent component (RecipeAdd)
+    onAdd(formData);
 
-    // Kosongkan form setelah submit
     setNamaPembuat("");
     setJudulResep("");
     setAlatBahan("");
     setCaraMembuat("");
-    setKategori(""); // Reset kategori
+    setKategori("");
     setGambar(null);
     setPreview(null);
   };

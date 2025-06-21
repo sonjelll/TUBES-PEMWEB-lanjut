@@ -15,7 +15,16 @@ export default function RecipeEdit() {
       try {
         setLoading(true);
         const data = await getRecipeByIdApi(id);
-        setInitialData(data);
+        // Mapping data backend ke format yang diharapkan RecipeForm
+        const mappedData = {
+          namaPembuat: data.nama_pembuat || "User", // Gunakan nama_pembuat dari backend, fallback ke "User"
+          judulResep: data.title || "",
+          alatBahan: data.ingredients || "",
+          caraMembuat: data.description || "",
+          kategori: data.category || "",
+          image_url: data.image_url || null,
+        };
+        setInitialData(mappedData);
       } catch (err) {
         setError(err.message);
         console.error("Gagal mengambil data resep:", err);

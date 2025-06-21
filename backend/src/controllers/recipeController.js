@@ -25,8 +25,10 @@ exports.addRecipe = async (req, res) => {
     const namaPembuat = req.user.nama;
 
     try {
+        console.log('Menambahkan resep oleh user:', userId, 'nama:', namaPembuat);
         const recipe = await Recipe.create({
             user_id: userId,
+            nama_pembuat: namaPembuat,
             title: judulResep,
             ingredients: alatBahan,
             description: caraMembuat,
@@ -38,7 +40,7 @@ exports.addRecipe = async (req, res) => {
             recipe: {
                 id: recipe.id,
                 user_id: userId,
-                namaPembuat: namaPembuat,
+                nama_pembuat: namaPembuat,
                 judulResep,
                 alatBahan,
                 caraMembuat,
@@ -108,14 +110,27 @@ exports.getRecipesByCategory = async (req, res) => {
 };
 
 // Fungsi untuk mendapatkan detail resep berdasarkan ID (untuk Edit)
+const User = require('../models/userModel');
+
 exports.getRecipeById = async (req, res) => {
     const { id } = req.params;
     try {
-        const recipe = await Recipe.findByPk(id);
+        const recipe = await Recipe.findByPk(id, {
+            include: [
+                {
+                    model: User,
+                    attributes: ['nama']
+                }
+            ]
+        });
         if (!recipe) {
             return res.status(404).json({ message: 'Resep tidak ditemukan.' });
         }
-        res.status(200).json(recipe);
+        // Ubah response agar mengikutsertakan nama pembuat di root object
+        const recipeData = recipe.toJSON();
+        recipeData.namaPembuat = recipeData.User ? recipeData.User.nama : null;
+        delete recipeData.User;
+        res.status(200).json(recipeData);
     } catch (error) {
         console.error('Error fetching recipe by ID:', error);
         res.status(500).json({ message: 'Gagal mengambil resep.', error: error.message });
@@ -130,6 +145,8 @@ exports.updateRecipe = async (req, res) => {
     }
     const userId = req.user.id;
 
+    console.log('User info from token:', req.user);
+
     const { judulResep, alatBahan, caraMembuat, kategori } = req.body;
     let imageUrl = null;
 
@@ -139,7 +156,10 @@ exports.updateRecipe = async (req, res) => {
             return res.status(404).json({ message: 'Resep tidak ditemukan.' });
         }
 
-        if (oldRecipe.user_id !== userId) {
+        console.log('User ID from token:', userId);
+        console.log('User ID from recipe:', oldRecipe.user_id);
+
+        if (String(oldRecipe.user_id) !== String(userId)) {
             return res.status(403).json({ message: 'Anda tidak diizinkan mengedit resep ini.' });
         }
 
