@@ -2,6 +2,7 @@
 const Recipe = require('../models/recipeModel');
 const path = require('path');
 const fs = require('fs');
+const db = require('../db'); // Hapus .promise() karena objek db sudah menyediakan method execute secara langsung
 
 const uploadsDir = path.join(__dirname, '../../../uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -124,86 +125,50 @@ exports.getRecipeById = async (req, res) => {
 // Fungsi untuk memperbarui resep
 exports.updateRecipe = async (req, res) => {
     const { id } = req.params;
-    // Pastikan req.user ada dari authMiddleware
     if (!req.user || !req.user.id) {
         return res.status(401).json({ message: 'Akses ditolak. User tidak terautentikasi.' });
     }
     const userId = req.user.id;
 
     const { judulResep, alatBahan, caraMembuat, kategori } = req.body;
-    let imageUrl = null; // Akan menyimpan URL gambar baru jika diupload
+    let imageUrl = null;
 
     try {
-        // Cek kepemilikan dan dapatkan URL gambar lama jika ada
-        const [oldRecipeRows] = await db.execute(`SELECT user_id, image_url FROM recipes WHERE id = ?`, [id]);
-        if (oldRecipeRows.length === 0) {
+        const oldRecipe = await Recipe.findOne({ where: { id } });
+        if (!oldRecipe) {
             return res.status(404).json({ message: 'Resep tidak ditemukan.' });
         }
-        const oldRecipe = oldRecipeRows[0];
 
         if (oldRecipe.user_id !== userId) {
             return res.status(403).json({ message: 'Anda tidak diizinkan mengedit resep ini.' });
         }
 
-        imageUrl = oldRecipe.image_url; // Default: pertahankan gambar lama
+        imageUrl = oldRecipe.image_url;
 
-        // Jika ada file baru diupload via Multer
         if (req.file) {
             imageUrl = `${process.env.APP_URL || `http://localhost:${process.env.PORT}`}/uploads/${req.file.filename}`;
-            // Opsional: Hapus gambar lama dari server jika berbeda dan ada
-            // if (oldRecipe.image_url && oldRecipe.image_url !== imageUrl) {
-            //     const oldFileName = path.basename(oldRecipe.image_url);
-            //     const oldFilePath = path.join(uploadsDir, oldFileName);
-            //     if (fs.existsSync(oldFilePath)) {
-            //         fs.unlink(oldFilePath, (err) => {
-            //             if (err) console.error('Error deleting old image file:', err);
-            //         });
-            //     }
-            // }
-        } else if (req.body.removeImage === 'true' && oldRecipe.image_url) { // Jika ada indikasi untuk menghapus gambar
-            imageUrl = null; // Set gambar menjadi null di DB
-            // Hapus file fisik gambar lama
-            // const oldFileName = path.basename(oldRecipe.image_url);
-            // const oldFilePath = path.join(uploadsDir, oldFileName);
-            // if (fs.existsSync(oldFilePath)) {
-            //     fs.unlink(oldFilePath, (err) => {
-            //         if (err) console.error('Error deleting old image file (on remove flag):', err);
-            //     });
-            // }
+            // Optional: delete old image file if needed
+        } else if (req.body.removeImage === 'true' && oldRecipe.image_url) {
+            imageUrl = null;
+            // Optional: delete old image file if needed
         }
 
-        // Construct UPDATE query dynamically for provided fields
-        const updateFields = [];
-        const updateValues = [];
+        const [updated] = await Recipe.update(
+            {
+                title: judulResep,
+                ingredients: alatBahan,
+                description: caraMembuat,
+                category: kategori,
+                image_url: imageUrl,
+            },
+            { where: { id, user_id: userId } }
+        );
 
-        // Add fields if they are defined (not undefined, null, or empty string depending on logic)
-        // Here we update all fields from the form
-        updateFields.push('title = ?'); updateValues.push(judulResep);
-        updateFields.push('ingredients = ?'); updateValues.push(alatBahan);
-        updateFields.push('description = ?'); updateValues.push(caraMembuat);
-        updateFields.push('category = ?'); updateValues.push(kategori);
-        updateFields.push('image_url = ?'); updateValues.push(imageUrl); // Update image_url based on logic above
-
-        if (updateFields.length === 0) {
-             return res.status(400).json({ message: 'Tidak ada data untuk diperbarui.' });
-        }
-
-        const query = `
-            UPDATE recipes
-            SET ${updateFields.join(', ')}
-            WHERE id = ? AND user_id = ?
-        `;
-        const values = [...updateValues, id, userId];
-
-        const [result] = await db.execute(query, values);
-
-        if (result.affectedRows === 0) {
-            // Jika affectedRows 0, bisa jadi ID tidak ditemukan atau tidak ada perubahan
+        if (updated === 0) {
             return res.status(404).json({ message: 'Resep tidak ditemukan atau tidak ada perubahan.' });
         }
 
         res.status(200).json({ message: 'Resep berhasil diperbarui!' });
-
     } catch (error) {
         console.error('Error updating recipe:', error);
         res.status(500).json({ message: 'Gagal memperbarui resep.', error: error.message });
@@ -214,44 +179,43 @@ exports.updateRecipe = async (req, res) => {
 // Fungsi untuk menghapus resep
 exports.deleteRecipe = async (req, res) => {
     const { id } = req.params;
-    // Pastikan req.user ada dari authMiddleware
     if (!req.user || !req.user.id) {
         return res.status(401).json({ message: 'Akses ditolak. User tidak terautentikasi.' });
     }
     const userId = req.user.id;
 
     try {
-        // Dapatkan info resep untuk cek kepemilikan dan URL gambar
-        const [recipeRows] = await db.execute(`SELECT user_id, image_url FROM recipes WHERE id = ?`, [id]);
-        if (recipeRows.length === 0) {
+        const recipeToDelete = await Recipe.findOne({ where: { id } });
+        if (!recipeToDelete) {
             return res.status(404).json({ message: 'Resep tidak ditemukan.' });
         }
-        const recipeToDelete = recipeRows[0];
 
-        if (recipeToDelete.user_id !== userId) {
+        console.log('User ID from token:', userId);
+        console.log('User ID from recipe:', recipeToDelete.user_id);
+
+        // Convert both to string for comparison to avoid type mismatch
+        if (String(recipeToDelete.user_id) !== String(userId)) {
             return res.status(403).json({ message: 'Anda tidak diizinkan menghapus resep ini.' });
         }
 
-        // Hapus resep dari database
-        const [result] = await db.execute(`DELETE FROM recipes WHERE id = ? AND user_id = ?`, [id, userId]);
-
-        if (result.affectedRows === 0) {
+        const deleted = await Recipe.destroy({ where: { id, user_id: userId } });
+        if (deleted === 0) {
             return res.status(404).json({ message: 'Resep tidak ditemukan atau tidak dapat dihapus.' });
         }
 
-        // Opsional: Hapus file gambar fisik dari server juga
         if (recipeToDelete.image_url) {
-            const fileName = path.basename(recipeToDelete.image_url); // Ambil nama file dari URL
-            const filePath = path.join(uploadsDir, fileName); // Buat path lengkap
+            const fileName = path.basename(recipeToDelete.image_url);
+            const filePath = path.join(uploadsDir, fileName);
             if (fs.existsSync(filePath)) {
                 fs.unlink(filePath, (err) => {
-                    if (err) console.error('Error deleting image file:', err);
+                    if (err) {
+                        console.error('Error deleting image file:', err);
+                    }
                 });
             }
         }
 
         res.status(200).json({ message: 'Resep berhasil dihapus!' });
-
     } catch (error) {
         console.error('Error deleting recipe:', error);
         res.status(500).json({ message: 'Gagal menghapus resep.', error: error.message });

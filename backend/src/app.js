@@ -15,6 +15,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Middleware untuk memeriksa JWT_SECRET
+if (!process.env.JWT_SECRET) {
+    console.error('JWT_SECRET is not set in environment variables');
+    process.exit(1); // Hentikan server jika JWT_SECRET tidak ada
+}
+
 // Sajikan folder 'uploads' secara statis agar gambar bisa diakses dari frontend
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads'))); // Koreksi path ke d:\PEMWEB-TUBES\backend\uploads
 

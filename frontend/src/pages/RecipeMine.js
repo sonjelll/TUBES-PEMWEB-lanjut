@@ -10,12 +10,12 @@ export default function RecipeMine() {
 
   // Untuk userId, idealnya diambil dari konteks user yang login
   // Untuk sementara, kita bisa hardcode atau ambil dari localStorage jika user ID tersimpan di sana
-  const dummyUserId = 1; // Ganti dengan ID user asli yang login
+  // const dummyUserId = 1; // Ganti dengan ID user asli yang login
 
   const fetchMyRecipes = async () => {
     try {
       setLoading(true);
-      const data = await getUserRecipesApi(dummyUserId); // Gunakan fungsi API
+      const data = await getUserRecipesApi(); // Gunakan fungsi API tanpa parameter
       setMyRecipes(data);
     } catch (err) {
       setError(err.message);
@@ -27,7 +27,7 @@ export default function RecipeMine() {
 
   useEffect(() => {
     fetchMyRecipes();
-  }, [dummyUserId]); // Dependensi dummyUserId jika berubah (misal dari context)
+  }, []); // Hanya jalankan sekali saat komponen mount
 
   const handleDelete = async (id) => {
     if (!window.confirm("Apakah Anda yakin ingin menghapus resep ini?")) return;
