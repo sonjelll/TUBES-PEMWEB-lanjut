@@ -3,16 +3,30 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 exports.register = async (req, res) => {
-  const { username, password, nama, email } = req.body;
-  // Cek username sudah ada
-  const existing = await userModel.findOne({ where: { username } });
-  if (existing) return res.status(400).json({ error: 'Username sudah terdaftar' });
-  // Cek email sudah ada
-  const existingEmail = await userModel.findOne({ where: { email } });
-  if (existingEmail) return res.status(400).json({ error: 'Email sudah terdaftar' });
-  const hash = await bcrypt.hash(password, 10);
-  const user = await userModel.create({ username, password: hash, nama, email });
-  res.json(user);
+  try {
+    const { username, password, nama, email } = req.body;
+    // Cek username sudah ada
+    const existing = await userModel.findOne({ where: { username } });
+    if (existing) return res.status(400).json({ message: 'Username sudah terdaftar' });
+    // Cek email sudah ada
+    const existingEmail = await userModel.findOne({ where: { email } });
+    if (existingEmail) return res.status(400).json({ message: 'Email sudah terdaftar' });
+    const hash = await bcrypt.hash(password, 10);
+    const user = await userModel.create({ username, password: hash, nama, email });
+    // sanitize user object before sending response
+    const userResponse = {
+      id: user.id,
+      username: user.username,
+      nama: user.nama,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+    res.json({ user: userResponse });
+  } catch (error) {
+    console.error('Error in register:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 };
 
 exports.login = async (req, res) => {
