@@ -1,56 +1,25 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getFavoritesApi, addFavoriteApi, removeFavoriteApi } from "../api/api";
+import { getAllRecipesApi } from "../api/api";
 
-// Simulasi API
-const dummyRecipes = [
-  { id: 1, title: "Tongseng kambing simpel" },
-  { id: 2, title: "Ayam Bakar Madu" },
-  { id: 3, title: "Sate Padang" },
-];
-
-export default function RecipeList({ user }) {
+export default function RecipeList({ user, favorites, onBookmark }) {
   const [recipes, setRecipes] = useState([]);
-  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
-    // Ganti dengan fetch/getRecipes() jika ada API
-    setRecipes(dummyRecipes);
+    fetchRecipes();
+  }, []);
 
-    if (user) {
-      fetchFavorites();
-    }
-  }, [user]);
-
-  const fetchFavorites = async () => {
+  const fetchRecipes = async () => {
     try {
-      const favs = await getFavoritesApi();
-      setFavorites(favs);
+      const data = await getAllRecipesApi();
+      setRecipes(data);
     } catch (error) {
-      console.error("Failed to fetch favorites:", error);
-    }
-  };
-
-  const handleBookmark = async (recipe) => {
-    if (!favorites.find(fav => fav.id === recipe.id)) {
-      try {
-        await addFavoriteApi(recipe.id);
-        setFavorites([...favorites, recipe]);
-      } catch (error) {
-        console.error("Failed to add favorite:", error);
-      }
-    } else {
-      try {
-        await removeFavoriteApi(recipe.id);
-        setFavorites(favorites.filter(fav => fav.id !== recipe.id));
-      } catch (error) {
-        console.error("Failed to remove favorite:", error);
-      }
+      console.error("Failed to fetch recipes:", error);
     }
   };
 
   const isFavorite = (recipeId) => {
-    return favorites.some(fav => fav.id === recipeId);
+    return favorites && favorites.some(fav => fav.id === recipeId);
   };
 
   return (
@@ -73,7 +42,7 @@ export default function RecipeList({ user }) {
             </Link>
             {user && (
               <button
-                onClick={() => handleBookmark(r)}
+                onClick={() => onBookmark(r)}
                 style={{
                   background: "none",
                   border: "none",

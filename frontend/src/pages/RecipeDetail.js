@@ -93,7 +93,6 @@ export default function RecipeDetail() {
           }}
           title={isFavorite(recipe.id) ? 'Hapus dari favorit' : 'Tambah ke favorit'}
         >
-          <i className={isFavorite(recipe.id) ? 'fas fa-bookmark' : 'far fa-bookmark'}></i>
         </button>
       )}
     </div>

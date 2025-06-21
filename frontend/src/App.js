@@ -300,7 +300,7 @@ function AppContent() {
       />
       <Route
         path="/recipe-detail/:id"
-        element={<RecipeDetail user={user} />}
+        element={<RecipeDetail user={user} favorites={favorites} onBookmark={toggleFavorite} />}
       />
       {/* Route untuk Tambah Resep */}
       <Route path="/tambah-resep" element={<RecipeAdd onRefresh={fetchData} />} />
@@ -438,6 +438,7 @@ function AppContent() {
                             />
                             {user && (
                               <button
+                                onClick={() => toggleFavorite(item)}
                                 style={{
                                   position: "absolute",
                                   top: 8,
@@ -446,13 +447,13 @@ function AppContent() {
                                   border: "none",
                                   cursor: "pointer",
                                   padding: 0,
-                                  color: "#888",
+                                  color: isFavorite(item.id) ? "#ff914d" : "#888",
                                   fontSize: 24,
                                   zIndex: 10,
                                 }}
-                                title="Bookmark"
+                                title={isFavorite(item.id) ? "Hapus dari favorit" : "Tambah ke favorit"}
                               >
-                                <i className="far fa-bookmark"></i>
+                                <i className={isFavorite(item.id) ? "fas fa-bookmark" : "far fa-bookmark"}></i>
                               </button>
                             )}
                 <div className="populer-title">
@@ -482,6 +483,7 @@ function AppContent() {
                               className="populer-img"
                             />
                             <button
+                              onClick={() => toggleFavorite(item)}
                               style={{
                                 position: "absolute",
                                 top: 8,
@@ -490,13 +492,13 @@ function AppContent() {
                                 border: "none",
                                 cursor: "pointer",
                                 padding: 0,
-                                color: "#888",
+                                color: isFavorite(item.id) ? "#ff914d" : "#888",
                                 fontSize: 24,
                                 zIndex: 10,
                               }}
-                              title="Bookmark"
+                              title={isFavorite(item.id) ? "Hapus dari favorit" : "Tambah ke favorit"}
                             >
-                              <i className="far fa-bookmark"></i>
+                              <i className={isFavorite(item.id) ? "fas fa-bookmark" : "far fa-bookmark"}></i>
                             </button>
                 <div className="populer-title">
                   <Link to={`/recipe-detail/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
@@ -537,9 +539,9 @@ function AppContent() {
                                 fontSize: 24,
                                 zIndex: 10,
                               }}
-                              title="Bookmark"
+                              title={isFavorite(item.id) ? "Hapus dari favorit" : "Tambah ke favorit"}
                             >
-                              <i className="far fa-bookmark"></i>
+                              <i className={isFavorite(item.id) ? "fas fa-bookmark" : "far fa-bookmark"}></i>
                             </button>
                 <div className="populer-title">
                   <Link to={`/recipe-detail/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
@@ -580,9 +582,9 @@ function AppContent() {
                                 fontSize: 24,
                                 zIndex: 10,
                               }}
-                              title="Bookmark"
+                              title={isFavorite(item.id) ? "Hapus dari favorit" : "Tambah ke favorit"}
                             >
-                              <i className="far fa-bookmark"></i>
+                              <i className={isFavorite(item.id) ? "fas fa-bookmark" : "far fa-bookmark"}></i>
                             </button>
                 <div className="populer-title">
                   <Link to={`/recipe-detail/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
